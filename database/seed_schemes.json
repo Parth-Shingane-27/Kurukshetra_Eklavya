@@ -1,0 +1,187 @@
+{
+  "_comment": "Representative sample scheme knowledge base (A-001). Not an exhaustive national catalogue. `seed_key` is a load-time-only reference used to link conflict_rules to schemes before Mongo assigns real _id values (see Phase 1 loader). Rule field_name values refer to Citizen profile fields (Section 13); 'age' is a derived field the Rule Engine computes from date_of_birth at evaluation time.",
+
+  "schemes": [
+    {
+      "seed_key": "pm_kisan",
+      "name": "PM-KISAN Samman Nidhi",
+      "description": "Income support to small and marginal farmer families holding cultivable land.",
+      "issuing_authority": "Ministry of Agriculture and Farmers Welfare",
+      "category": "Agriculture,Rural & Environment",
+      "benefit_type": "cash_transfer",
+      "benefit_value_estimate": 6000,
+      "conflict_group": null,
+      "is_active": true,
+      "source_reference": "https://pmkisan.gov.in/",
+      "rules": [
+        { "field_name": "occupation", "operator": "=", "value": "farmer", "logical_group": "A" },
+        { "field_name": "land_holding_acres", "operator": "<=", "value": 5, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Land Ownership Record (Khasra/Khatauni)", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "old_age_pension",
+      "name": "National Old Age Pension Scheme (IGNOAPS)",
+      "description": "Monthly pension for elderly citizens living below the poverty line.",
+      "issuing_authority": "Ministry of Rural Development",
+      "category": "Social welfare & Empowerment",
+      "benefit_type": "monthly_pension",
+      "benefit_value_estimate": 12000,
+      "conflict_group": null,
+      "is_active": true,
+      "source_reference": "https://nsap.nic.in/",
+      "rules": [
+        { "field_name": "age", "operator": ">=", "value": 60, "logical_group": "A" },
+        { "field_name": "bpl_status", "operator": "=", "value": true, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Age Proof (Birth Certificate)", "is_mandatory": true },
+        { "document_type": "BPL Ration Card", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "pmay_housing",
+      "name": "Pradhan Mantri Awas Yojana (Rural)",
+      "description": "Central housing subsidy for BPL households to construct a pucca house.",
+      "issuing_authority": "Ministry of Rural Development",
+      "category": "Housing & Shelter",
+      "benefit_type": "housing_subsidy",
+      "benefit_value_estimate": 130000,
+      "conflict_group": "housing_subsidy",
+      "is_active": true,
+      "source_reference": "https://pmayg.nic.in/",
+      "rules": [
+        { "field_name": "bpl_status", "operator": "=", "value": true, "logical_group": "A" },
+        { "field_name": "annual_income", "operator": "<=", "value": 300000, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "BPL Ration Card", "is_mandatory": true },
+        { "document_type": "Land Ownership Proof", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "state_housing_subsidy",
+      "name": "State Rural Housing Assistance Scheme",
+      "description": "State-funded housing assistance, an alternative to the central housing subsidy for state-domiciled applicants.",
+      "issuing_authority": "State Department of Rural Housing",
+      "category": "Housing & Shelter",
+      "benefit_type": "housing_subsidy",
+      "benefit_value_estimate": 100000,
+      "conflict_group": "housing_subsidy",
+      "is_active": true,
+      "source_reference": "https://example-state.gov.in/housing",
+      "rules": [
+        { "field_name": "annual_income", "operator": "<=", "value": 250000, "logical_group": "A" },
+        { "field_name": "state", "operator": "=", "value": "Maharashtra", "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Residence Certificate", "is_mandatory": true },
+        { "document_type": "Income Certificate", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "post_matric_scholarship",
+      "name": "Post-Matric Scholarship for SC/ST Students",
+      "description": "Scholarship covering tuition and maintenance allowance for SC/ST students beyond matriculation.",
+      "issuing_authority": "Ministry of Social Justice and Empowerment",
+      "category": "Education & Learning",
+      "benefit_type": "scholarship",
+      "benefit_value_estimate": 20000,
+      "conflict_group": null,
+      "is_active": true,
+      "source_reference": "https://scholarships.gov.in/",
+      "rules": [
+        { "field_name": "social_category", "operator": "in", "value": ["SC", "ST"], "logical_group": "A" },
+        { "field_name": "education_level", "operator": "=", "value": "post_matric", "logical_group": "A" },
+        { "field_name": "annual_income", "operator": "<=", "value": 250000, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Caste Certificate", "is_mandatory": true },
+        { "document_type": "Income Certificate", "is_mandatory": true },
+        { "document_type": "Bonafide/Admission Certificate", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "disability_pension",
+      "name": "Disability Pension Scheme",
+      "description": "Monthly pension for persons with a certified disability.",
+      "issuing_authority": "Ministry of Social Justice and Empowerment",
+      "category": "Social welfare & Empowerment",
+      "benefit_type": "monthly_pension",
+      "benefit_value_estimate": 9600,
+      "conflict_group": null,
+      "is_active": true,
+      "source_reference": "https://disabilityaffairs.gov.in/",
+      "rules": [
+        { "field_name": "disability_status", "operator": "=", "value": true, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Disability Certificate", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "skill_dev_stipend",
+      "name": "Skill Development Training Stipend",
+      "description": "Stipend for unemployed youth enrolled in a certified skill-training program.",
+      "issuing_authority": "Ministry of Skill Development and Entrepreneurship",
+      "category": "Skills & Employment",
+      "benefit_type": "stipend",
+      "benefit_value_estimate": 15000,
+      "conflict_group": null,
+      "is_active": true,
+      "source_reference": "https://www.msde.gov.in/",
+      "rules": [
+        { "field_name": "employment_status", "operator": "=", "value": "unemployed", "logical_group": "A" },
+        { "field_name": "age", "operator": ">=", "value": 18, "logical_group": "A" },
+        { "field_name": "age", "operator": "<=", "value": 35, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Education Certificate", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "unemployment_allowance",
+      "name": "State Unemployment Allowance Scheme",
+      "description": "Monthly cash allowance for educated unemployed job-seekers registered with the state employment exchange.",
+      "issuing_authority": "State Department of Labour and Employment",
+      "category": "Skills & Employment",
+      "benefit_type": "cash_transfer",
+      "benefit_value_estimate": 18000,
+      "conflict_group": null,
+      "is_active": true,
+      "source_reference": "https://example-state.gov.in/employment",
+      "rules": [
+        { "field_name": "employment_status", "operator": "=", "value": "unemployed", "logical_group": "A" },
+        { "field_name": "education_level", "operator": "in", "value": ["secondary", "post_matric", "undergraduate", "postgraduate"], "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Education Certificate", "is_mandatory": true },
+        { "document_type": "Employment Exchange Registration", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    }
+  ],
+
+  "conflict_rules": [
+    {
+      "scheme_a_key": "skill_dev_stipend",
+      "scheme_b_key": "unemployment_allowance",
+      "conflict_type": "mutually_exclusive",
+      "reason": "A citizen cannot simultaneously draw an unemployment cash allowance and a training stipend intended to move them into employment; the two schemes are budget-linked alternatives, not stackable."
+    }
+  ]
+}

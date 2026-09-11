@@ -1,0 +1,9 @@
+{
+  "name": "asbo-e2e",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Root-level tooling for tests/ (E2E). The app itself lives in backend/ and frontend/.",
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
+}

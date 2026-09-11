@@ -1,0 +1,9 @@
+{
+  "name": "asbo-backend",
+  "private": true,
+  "version": "0.0.0",
+  "description": "npm wrapper so the backend starts the same way as frontend/ (npm run dev) instead of a shell-specific script.",
+  "scripts": {
+    "dev": ".venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --port 8000"
+  }
+}
