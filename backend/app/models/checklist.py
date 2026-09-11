@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -12,6 +12,9 @@ class ChecklistItemOut(BaseModel):
     related_scheme_ids: list[str]
     related_scheme_names: list[str]
     status: Literal["missing", "held"]
+    evidence: list[dict[str, Any]] | None = None
+    """Best-effort RAG evidence for this document requirement (Section 6) — absent when
+    citation attachment was skipped or found nothing verifiable, never fabricated."""
 
 
 class MissingDocumentsForScheme(BaseModel):

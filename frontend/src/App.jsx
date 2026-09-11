@@ -3,9 +3,11 @@ import { Link, Route, Routes } from "react-router-dom";
 import Admin from "./pages/Admin";
 import Bundle from "./pages/Bundle";
 import Checklist from "./pages/Checklist";
+import Dashboard from "./pages/Dashboard";
 import EligibleSchemes from "./pages/EligibleSchemes";
+import Landing from "./pages/Landing";
 import Login from "./pages/Login";
-import ProfileIntake from "./pages/ProfileIntake";
+import Onboarding from "./pages/Onboarding";
 import Register from "./pages/Register";
 import Trace from "./pages/Trace";
 import { clearSession, getUser, isLoggedIn, subscribe } from "./auth/session";
@@ -41,9 +43,11 @@ function App() {
     <>
       <SessionNav />
       <Routes>
-        <Route path="/" element={<ProfileIntake />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/citizens/:citizenId/eligibility" element={<EligibleSchemes />} />
         <Route path="/citizens/:citizenId/bundle" element={<Bundle />} />
         <Route path="/bundles/:bundleId/checklist" element={<Checklist />} />

@@ -8,6 +8,9 @@ venv/
 # Env
 .env
 
+# RAG vector store / BM25 index (rebuilt via backend/scripts/ingest_policies.py)
+backend/data/
+
 # Node / frontend
 node_modules/
 dist/

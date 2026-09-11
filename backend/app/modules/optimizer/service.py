@@ -12,6 +12,7 @@ from app.modules.optimizer.engine import optimize_bundle
 from app.modules.profile.service import get_citizen
 from app.modules.rule_engine.service import get_latest_eligible_schemes
 from app.modules.scheme_kb.service import list_conflict_rules
+from app.rag.citations import attach_policy_citations
 
 STEP_NAME = "bundle_optimization"
 EXPLANATION_STEP_NAME = "explanation"
@@ -26,6 +27,7 @@ def _serialize_bundle(doc: dict) -> dict:
         {**e, "scheme_id": str(e["scheme_id"])} for e in doc.pop("excluded_schemes", [])
     ]
     doc.pop("checklist_items", None)
+    doc.setdefault("policy_citations", None)
     return doc
 
 
@@ -62,6 +64,9 @@ async def optimize_bundle_for_citizen(db: AsyncIOMotorDatabase, citizen_id: str)
             "excluded": result["excluded"],
         }
     )
+    # Best-effort RAG grounding for the Explanation Agent (Section 6) — skipped entirely when
+    # no GEMINI_API_KEY is configured, and never blocks the pipeline on retrieval failure.
+    policy_citations = await attach_policy_citations(included)
 
     doc = {
         "citizen_id": ObjectId(citizen_id),
@@ -76,6 +81,7 @@ async def optimize_bundle_for_citizen(db: AsyncIOMotorDatabase, citizen_id: str)
             for e in result["excluded"]
         ],
         "explanation_text": explanation_text,
+        "policy_citations": policy_citations,
         "checklist_items": [],
         "generated_at": datetime.now(timezone.utc),
     }

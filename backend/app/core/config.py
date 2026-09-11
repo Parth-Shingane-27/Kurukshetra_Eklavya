@@ -10,7 +10,10 @@ class Settings(BaseSettings):
     mongo_db_name: str = "asbo"
 
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.0-flash"
+    # "gemini-2.0-flash" (the previous default) has since been retired upstream (404 as of
+    # this writing); "gemini-flash-latest" is a rolling alias rather than a dated snapshot,
+    # so it shouldn't need updating again as models are retired.
+    gemini_model: str = "gemini-flash-latest"
 
     admin_credential: str = "change-me-admin-token"
 
@@ -24,6 +27,13 @@ class Settings(BaseSettings):
     resend_from_email: str = "ASBO <onboarding@resend.dev>"
 
     seed_schemes_on_startup: bool = True
+
+    # RAG layer (Section: Shared Policy Knowledge Service)
+    chroma_persist_dir: str = "./data/chroma"
+    embedding_model: str = "gemini-embedding-001"
+    rag_top_k: int = 5
+    policy_corpus_path: str = "../gov_schemes_cleaned.json"
+    bm25_index_path: str = "./data/bm25_index.pkl"
 
     # Comma-separated list — the frontend dev server (5173) and its production preview (4173)
     # by default. A real hosted deployment (Section 24) would set this to its actual origin.

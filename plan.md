@@ -1926,3 +1926,88 @@ Blocked:
   during, Phase 9/10/11 respectively — none block Phases 0–8, which are unaffected by any of
   Sections 12's BR-013/014/015 or the new FR-012–015.
 ```
+
+---
+
+## 34. Extended Scope — RAG Layer and 5 Additional Agents
+
+This section documents a deliberate scope extension beyond Sections 3/4's original Non-Goals
+and Out-of-Scope lists — added after the original 8-agent system above was complete and
+demoable, not a silent contradiction of them. Where those sections say "verifying document
+authenticity (OCR/fraud detection) is out of scope," "no multi-language localization," this
+extension explicitly does *not* claim to have solved those problems; it adds the pieces that
+are honestly achievable without them (structural document checks, risk *indicators* requiring
+human review, best-effort translation with a verbatim-value guard) and says so at every
+result surface, per the additions below.
+
+**New dependencies:** `langchain`, `langchain-core`, `langchain-google-genai`, `langgraph`,
+`chromadb`, `rank-bm25`, `pypdf` (`backend/requirements.txt`). Still no torch, no Tesseract/OCR
+binary — consistent with Section 18's "no heavyweight dependency without justification."
+
+**RAG layer (`backend/app/rag/`):** `gov_schemes_cleaned.json` (repo root, 3,397 real scheme
+records, previously unused by the app) is chunked per semantic section
+(details/eligibility/benefits/application/documents), embedded via the Gemini embeddings API
+(reusing the existing `GEMINI_API_KEY`), and indexed into a local Chroma vector store + a
+parallel BM25 keyword index for hybrid retrieval (`backend/scripts/ingest_policies.py`). The
+curated `schemes` collection above is untouched and stays the sole source of eligibility
+truth; `PolicyKnowledgeService` (`rag/policy_service.py`) checks it first for a scheme lookup
+and falls back to the vector corpus otherwise. Every retrieval result is labeled
+`source: "dataset_provided"` (the raw corpus has no verified `source_url`/department field)
+or `"curated_knowledge_base"` (the app's own `schemes` collection) — never "official." Query-
+time retrieval failure (e.g. no API key) degrades to an honest "not verified" result rather
+than raising, the same BR-010 principle the Explanation Agent already followed, now applied
+to every RAG-backed call.
+
+**Light-touch integration into the existing 8 agents (all additive, zero breaking changes —
+the pre-existing 93+ tests pass unmodified):** a new `GET /api/policy/*` router for scheme
+discovery/eligibility/documents/deadline/grievance lookups over the full corpus; `BundleOut`
+gained an optional `policy_citations` field (Explanation Agent grounding) and
+`ChecklistItemOut` gained an optional `evidence` field (Checklist Agent grounding) — both
+`None`/absent whenever no `GEMINI_API_KEY` is configured or nothing is retrievable, never
+fabricated.
+
+**Five new agents**, each following the existing `modules/<name>/{engine.py, service.py}` +
+`api/<name>.py` pattern, each with its own Mongo collection and reusing `app/core/audit.py`'s
+`log_step` for the same trace mechanism as the original 8:
+
+- **Document Verification** (`document_verifications`) — text-layer PDF parsing only
+  (`app/services/document_parser.py`, `pypdf`, no OCR); structural checks against
+  `retrieve_required_documents`; `authenticity_verified` is always `False`.
+- **Deadline/Reminder** (`reminders`) — deadline text extracted from retrieved policy
+  evidence via date-pattern matching, never invented; `app/services/notification_service.py`
+  is a stub that always reports `sent: False`; reminders require explicit `consent: true`.
+- **Feedback/Grievance** (`grievances`) — `is_official_submission` is always `False`; an
+  internal platform ticket only, with department/contact info attached only when actually
+  retrievable.
+- **Fraud Detection** (`fraud_flags`) — deterministic indicators only (document-type
+  mismatch, missing fields, expired documents, duplicate submissions, cross-document field
+  conflicts) over already-computed Document Verification records; an optional Gemini step
+  only restates those indicators for a human reviewer (same prompt discipline as the
+  Explanation Agent's `llm_client.py`) and never produces a "confirmed fraud" verdict;
+  `human_review_required` is always `True` once any indicator is found.
+- **Multi-language Chat** (stateless, no new collection) — incoming-message language
+  detection + translation to English via LangChain structured output; outgoing-response
+  translation back to the user's language only after verifying every critical value (scheme
+  name, amount, date) supplied by the caller survives verbatim in the translated text,
+  falling back to English with a warning otherwise.
+
+**LangGraph orchestration (`backend/app/graph/`):** a single `StateGraph` (`AgentState` in
+`state.py`, deterministic keyword-based intent routing in `routing.py`,
+node/edge assembly in `workflow.py`) that intent-routes a free-text message across all 13
+agents, exposed as `POST /api/assistant/message` / `POST /api/assistant/message/resume`
+(`api/assistant.py`) — additive; every original per-stage REST endpoint keeps working
+unchanged. Nodes are thin adapters calling the existing service functions directly (never a
+reimplementation), matching the existing Agent Orchestrator's own NFR-005 principle. A
+`MemorySaver` checkpointer backs a human-review `interrupt()`/`Command(resume=...)` cycle for
+Document Verification and Fraud Detection results that need review before finalizing;
+subgraphs are expressed as conditional-edge sequences within one graph rather than nested
+compiled subgraphs, a deliberate simplification at this project's scale. `Mongo db` is passed
+per-invocation via `config["configurable"]["db"]` rather than graph state, since a live
+database handle isn't checkpoint-serializable.
+
+**Known limitations, stated rather than hidden:** intent classification is keyword-based, not
+LLM-assisted, so unusual phrasing falls through to `GENERAL_QUERY`; `MemorySaver` is
+in-process only, so a human-review pause doesn't survive a backend restart (a durable
+LangGraph checkpointer is a swap-in replacement, not a redesign, when that's needed); the
+Gemini free-tier embedding quota (100 requests/minute at the time of writing) means ingesting
+the full 3,397-scheme corpus in one run may need to pause/retry against that limit.

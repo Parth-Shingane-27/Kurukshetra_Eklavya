@@ -14,3 +14,12 @@ pytest>=8.3
 pytest-asyncio>=0.24
 mongomock>=4.3
 mongomock-motor>=0.0.34
+
+# RAG layer + LangGraph orchestration (Section: RAG + new agents)
+langchain>=0.3
+langchain-core>=0.3
+langchain-google-genai>=2.0
+langgraph>=0.2
+chromadb>=0.5
+rank-bm25>=0.2
+pypdf>=5.0
