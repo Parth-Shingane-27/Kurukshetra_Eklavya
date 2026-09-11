@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 const STEPS = [
-  { key: "profile", label: "1. Profile", path: () => "/" },
+  { key: "profile", label: "1. Dashboard", path: () => "/dashboard" },
   {
     key: "eligibility",
     label: "2. Eligible Schemes",

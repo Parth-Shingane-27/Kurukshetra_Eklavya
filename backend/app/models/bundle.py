@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -38,4 +39,7 @@ class BundleOut(BaseModel):
     total_benefit_value: float
     excluded: list[ExcludedScheme]
     explanation_text: str | None = None
+    policy_citations: list[dict[str, Any]] | None = None
+    """Best-effort RAG evidence per included scheme (Section 6) — None when RAG citation
+    attachment was skipped (no GEMINI_API_KEY) or found nothing verifiable, never fabricated."""
     generated_at: datetime

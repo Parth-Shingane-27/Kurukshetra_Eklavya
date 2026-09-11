@@ -6,6 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.audit import log_step
 from app.modules.checklist.engine import build_checklist, compute_missing_documents
 from app.modules.scheme_kb.service import get_schemes_by_ids
+from app.rag.citations import attach_document_evidence
 
 STEP_NAME = "checklist"
 
@@ -43,6 +44,9 @@ async def generate_checklist(db: AsyncIOMotorDatabase, bundle_id: str) -> dict:
     held_documents = {d["document_type"] for d in citizen.get("documents", []) if d.get("held")}
 
     checklist_items = build_checklist(bundle_schemes, held_documents)
+    # Best-effort RAG grounding (Section 6: Checklist Agent) — skipped when no GEMINI_API_KEY
+    # is configured; items pass through unchanged in that case.
+    checklist_items = await attach_document_evidence(checklist_items)
     missing_by_scheme = compute_missing_documents(bundle_schemes, held_documents)
 
     await db.bundles.update_one(

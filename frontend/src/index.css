@@ -5,6 +5,8 @@
   --surface: #ffffff;
   --border: #e0e1e6;
   --accent: #2f6f4f;
+  --accent-2: #1e5c7a;
+  --accent-soft: #e7f2ec;
   --accent-contrast: #ffffff;
   --danger: #b3261e;
   --danger-bg: #fbeceb;
@@ -14,6 +16,9 @@
   --success-bg: #e7f5ec;
   --neutral-bg: #eef0f3;
   --focus: #2f6f4f;
+  --shadow-sm: 0 1px 2px rgba(20, 24, 32, 0.06);
+  --shadow-md: 0 8px 24px rgba(20, 24, 32, 0.08);
+  --radius-lg: 16px;
 
   color-scheme: light;
   font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
@@ -347,4 +352,374 @@ details.trace-step pre {
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--accent);
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+}
+
+button.ghost:hover {
+  color: var(--accent);
+}
+
+button.small {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.82rem;
+}
+
+/* ---------- Landing ---------- */
+
+.hero-page {
+  max-width: 920px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3rem;
+  min-height: 100%;
+}
+
+.hero {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+}
+
+.hero h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  max-width: 20ch;
+  margin: 0 0 0.75rem;
+}
+
+.hero-sub {
+  max-width: 52ch;
+  font-size: 1.05rem;
+}
+
+.hero-actions {
+  margin: 1rem 0;
+}
+
+.hero-actions button {
+  padding: 0.8rem 1.75rem;
+  font-size: 1rem;
+  box-shadow: var(--shadow-md);
+}
+
+.resume-disclosure {
+  margin-top: 0.5rem;
+}
+
+.resume-disclosure summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.resume-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  justify-content: center;
+}
+
+.resume-form input {
+  font: inherit;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-width: 220px;
+}
+
+.hero-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.hero-step {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.2rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.hero-step-number {
+  flex: none;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.hero-step strong {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.hero-step p {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+/* ---------- Onboarding wizard ---------- */
+
+.wizard-page {
+  max-width: 640px;
+}
+
+.wizard-progress {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.5rem;
+}
+
+.wizard-dot {
+  height: 5px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.wizard-dot.active,
+.wizard-dot.done {
+  background: var(--accent);
+}
+
+.wizard-actions {
+  justify-content: flex-end;
+}
+
+.wizard-actions button[type="submit"] {
+  margin-left: auto;
+}
+
+/* ---------- Dashboard ---------- */
+
+.dashboard-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.dashboard-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dashboard-greeting {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.dashboard-page {
+  max-width: 1080px;
+}
+
+.dashboard-section {
+  margin-bottom: 3rem;
+}
+
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-tile {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.stat-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.explore-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.search-input {
+  font: inherit;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  width: 100%;
+}
+
+.filter-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem 1rem;
+}
+
+.filter-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.chip-toggle {
+  background: var(--neutral-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+}
+
+.filter-grid {
+  margin-top: 1rem;
+}
+
+/* ---------- Scheme cards ---------- */
+
+.scheme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.scheme-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.2rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.scheme-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.scheme-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.scheme-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.chip {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+
+.chip-tag {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.scheme-card h3 {
+  font-size: 1.05rem;
+  margin: 0 0 0.2rem;
+}
+
+.scheme-card-authority {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0 0 0.4rem;
+}
+
+.scheme-card-desc {
+  font-size: 0.88rem;
+  margin: 0 0 0.6rem;
+}
+
+.scheme-card-benefit {
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.scheme-card-benefit span {
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.scheme-card-details {
+  margin-top: auto;
+  font-size: 0.85rem;
+}
+
+.scheme-card-details summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.scheme-card-details ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--text-muted);
 }

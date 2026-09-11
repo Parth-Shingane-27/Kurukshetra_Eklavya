@@ -35,6 +35,44 @@ async def test_generate_checklist_all_missing_when_no_documents_declared(client,
     missing_entry = next(m for m in body["missing_by_scheme"])
     assert missing_entry["scheme_name"] == "Pradhan Mantri Awas Yojana (Rural)"
     assert "Aadhaar Card" in missing_entry["missing_documents"]
+    assert all(item.get("evidence") is None for item in body["checklist_items"])  # no GEMINI_API_KEY in test env
+
+
+async def test_generate_checklist_attaches_evidence_when_rag_configured(client, db, monkeypatch):
+    """Section 6: Checklist Agent grounding — best-effort only, via
+    app.rag.citations.attach_document_evidence, never touching the real vector store."""
+    from app.rag.schemas import RetrievalResult, RetrievedEvidence
+
+    class FakeSettings:
+        gemini_api_key = "fake-key-for-this-test-only"
+
+    class FakePolicyService:
+        async def retrieve_policy_evidence(self, query, top_k=1, filters=None):
+            return RetrievalResult(
+                query=query,
+                verified=True,
+                evidence=[
+                    RetrievedEvidence(
+                        content=f"Sample retrieved evidence for {query}",
+                        scheme_id="corpus-999",
+                        scheme_name="Some Scheme",
+                        section="documents",
+                        source="dataset_provided",
+                    )
+                ],
+            )
+
+    monkeypatch.setattr("app.rag.citations.get_settings", lambda: FakeSettings())
+    monkeypatch.setattr("app.rag.citations.get_policy_service", lambda: FakePolicyService())
+
+    await seed_schemes_if_empty(db)
+    _citizen_id, bundle_id = await _build_bundle(client, bpl_status=True, annual_income=200000)
+
+    res = await client.post("/api/checklist/generate", json={"bundle_id": bundle_id})
+    assert res.status_code == 200
+    body = res.json()
+    assert all(item["evidence"] is not None for item in body["checklist_items"])
+    assert body["checklist_items"][0]["evidence"][0]["source"] == "dataset_provided"
 
 
 async def test_generate_checklist_marks_declared_documents_held(client, db):

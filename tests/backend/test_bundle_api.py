@@ -68,6 +68,49 @@ async def test_bundle_optimize_picks_higher_value_housing_scheme(client, db):
 
     excluded_ids = {e["scheme_id"] for e in body["excluded"]}
     assert str(state_housing["_id"]) in excluded_ids
+    assert body["policy_citations"] is None  # no GEMINI_API_KEY configured in the test env
+
+
+async def test_bundle_optimize_attaches_policy_citations_when_rag_configured(client, db, monkeypatch):
+    """Section 6: Explanation Agent grounding — best-effort only, wired through
+    app.rag.citations.attach_policy_citations, never touching the real vector store in tests."""
+    from app.rag.schemas import RetrievalResult, RetrievedEvidence
+
+    class FakeSettings:
+        gemini_api_key = "fake-key-for-this-test-only"
+
+    class FakePolicyService:
+        async def retrieve_policy_evidence(self, query, top_k=1, filters=None):
+            return RetrievalResult(
+                query=query,
+                verified=True,
+                evidence=[
+                    RetrievedEvidence(
+                        content=f"Sample retrieved evidence for {query}",
+                        scheme_id="corpus-999",
+                        scheme_name=query,
+                        section="details",
+                        source="dataset_provided",
+                    )
+                ],
+            )
+
+    monkeypatch.setattr("app.rag.citations.get_settings", lambda: FakeSettings())
+    monkeypatch.setattr("app.rag.citations.get_policy_service", lambda: FakePolicyService())
+
+    await seed_schemes_if_empty(db)
+    citizen_id = await _create_citizen(client, bpl_status=True, annual_income=200000)
+    await _evaluate(client, citizen_id)
+
+    res = await client.post("/api/bundle/optimize", json={"citizen_id": citizen_id})
+    assert res.status_code == 200
+    body = res.json()
+
+    assert body["policy_citations"] is not None
+    cited_names = {c["scheme_name"] for c in body["policy_citations"]}
+    assert cited_names  # at least one included scheme got a citation
+    for citation in body["policy_citations"]:
+        assert citation["evidence"][0]["source"] == "dataset_provided"
 
 
 async def test_bundle_optimize_no_eligible_schemes_is_empty_not_error(client, db):
