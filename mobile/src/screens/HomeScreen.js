@@ -114,7 +114,7 @@ export default function HomeScreen({ navigation }) {
             )}
 
             {personalized.schemes.map((s) => (
-              <SchemeCard key={s.id} scheme={s} matchStatus="eligible" />
+              <SchemeCard key={s.id} scheme={s} matchStatus="eligible" navigation={navigation} />
             ))}
 
             <View style={styles.actions}>

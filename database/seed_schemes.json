@@ -1,5 +1,5 @@
 {
-  "_comment": "Representative sample scheme knowledge base (A-001). Not an exhaustive national catalogue. `seed_key` is a load-time-only reference used to link conflict_rules to schemes before Mongo assigns real _id values (see Phase 1 loader). Rule field_name values refer to Citizen profile fields (Section 13); 'age' is a derived field the Rule Engine computes from date_of_birth at evaluation time.",
+  "_comment": "Representative sample scheme knowledge base (A-001). Not an exhaustive national catalogue. `seed_key` is a load-time-only reference used to link conflict_rules to schemes before Mongo assigns real _id values (see Phase 1 loader). Rule field_name values refer to Citizen profile fields (Section 13); 'age' is a derived field the Rule Engine computes from date_of_birth at evaluation time. `links` fields were populated by directly fetching each official domain (not by trusting a search-engine snippet) on 2026-09-11 — see each scheme's verification_notes for what was actually confirmed, and Section 20a of plan.md for the full verification writeup.",
 
   "schemes": [
     {
@@ -12,7 +12,19 @@
       "benefit_value_estimate": 6000,
       "conflict_group": null,
       "is_active": true,
-      "source_reference": "https://pmkisan.gov.in/",
+      "links": {
+        "policy_url": "https://pmkisan.gov.in/",
+        "official_scheme_url": "https://pmkisan.gov.in/",
+        "application_url": "https://pmkisan.gov.in/RegistrationFormupdated.aspx",
+        "renewal_url": null,
+        "grievance_url": "https://pmkisan.gov.in/",
+        "source_url": "https://pmkisan.gov.in/",
+        "application_link_status": "verified",
+        "last_verified_at": "2026-09-11T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched https://pmkisan.gov.in/RegistrationFormupdated.aspx on 2026-09-11: confirmed a real, live 'NEW FARMER REGISTRATION FORM' hosted by the National Informatics Centre for the Dept. of Agriculture & Farmers Welfare, with Aadhaar/Mobile/State/CAPTCHA fields and an Aadhaar-Act consent section — not merely an HTTP 200 on the homepage."
+        ]
+      },
       "rules": [
         { "field_name": "occupation", "operator": "=", "value": "farmer", "logical_group": "A" },
         { "field_name": "land_holding_acres", "operator": "<=", "value": 5, "logical_group": "A" }
@@ -33,7 +45,20 @@
       "benefit_value_estimate": 12000,
       "conflict_group": null,
       "is_active": true,
-      "source_reference": "https://nsap.nic.in/",
+      "links": {
+        "policy_url": "https://nsap.nic.in/",
+        "official_scheme_url": "https://nsap.nic.in/",
+        "application_url": "https://nsap.nic.in/",
+        "renewal_url": null,
+        "grievance_url": null,
+        "source_url": "https://nsap.nic.in/",
+        "application_link_status": "unverified",
+        "last_verified_at": "2026-09-11T00:00:00+00:00",
+        "verification_notes": [
+          "nsap.nic.in is corroborated as the official NSAP (Ministry of Rural Development, GoI) domain by multiple independent search results, and is reported to have an 'Online Registration/Application for Pension' section.",
+          "Direct fetch attempts to nsap.nic.in failed with a DNS resolution error (getaddrinfo ENOTFOUND) from this tool — most .nic.in government domains are known to restrict access from outside India, so this is treated as an inconclusive verification attempt, not evidence the domain is wrong or dead. Deliberately left as 'unverified' rather than 'verified' since we could not independently confirm the actual page content ourselves."
+        ]
+      },
       "rules": [
         { "field_name": "age", "operator": ">=", "value": 60, "logical_group": "A" },
         { "field_name": "bpl_status", "operator": "=", "value": true, "logical_group": "A" }
@@ -54,7 +79,20 @@
       "benefit_value_estimate": 130000,
       "conflict_group": "housing_subsidy",
       "is_active": true,
-      "source_reference": "https://pmayg.nic.in/",
+      "links": {
+        "policy_url": "https://pmayg.dord.gov.in/netiayHome/Home.aspx",
+        "official_scheme_url": "https://pmayg.dord.gov.in/netiayHome/Home.aspx",
+        "application_url": null,
+        "renewal_url": null,
+        "grievance_url": null,
+        "source_url": "https://pmayg.dord.gov.in/netiayHome/Home.aspx",
+        "application_link_status": "not_available",
+        "last_verified_at": "2026-09-11T00:00:00+00:00",
+        "verification_notes": [
+          "The original seed URL (pmayg.nic.in) failed DNS resolution from this tool; pmayg.dord.gov.in/netiayHome/Home.aspx (Ministry of Rural Development, GoI) was fetched directly instead and confirmed as the current, live PMAY-G portal.",
+          "Directly confirmed on that page: PMAY-G has NO citizen self-application form. Beneficiary selection is survey-based (AwaasPlus/SECC), and the site's own navigation only offers 'IAY/PMAYG Beneficiary' and 'SECC Family Member Details' lookup tools for people already on the list — not a new-application form. application_link_status is 'not_available' as a confirmed finding, not a gap."
+        ]
+      },
       "rules": [
         { "field_name": "bpl_status", "operator": "=", "value": true, "logical_group": "A" },
         { "field_name": "annual_income", "operator": "<=", "value": 300000, "logical_group": "A" }
@@ -76,7 +114,19 @@
       "benefit_value_estimate": 100000,
       "conflict_group": "housing_subsidy",
       "is_active": true,
-      "source_reference": "https://example-state.gov.in/housing",
+      "links": {
+        "policy_url": null,
+        "official_scheme_url": null,
+        "application_url": null,
+        "renewal_url": null,
+        "grievance_url": null,
+        "source_url": null,
+        "application_link_status": "not_available",
+        "last_verified_at": "2026-09-11T00:00:00+00:00",
+        "verification_notes": [
+          "This is a representative/fictional demonstration scheme (see plan.md A-001), invented to give the Bundle Optimizer a same-category conflict pair to resolve against PMAY-G — it is not tied to any real, identifiable Indian state government program. The previous seed value ('https://example-state.gov.in/housing') was a placeholder domain that does not resolve to a real government site. No real application URL can honestly be found or verified for a fictional scheme, so all link fields are left null rather than inventing one."
+        ]
+      },
       "rules": [
         { "field_name": "annual_income", "operator": "<=", "value": 250000, "logical_group": "A" },
         { "field_name": "state", "operator": "=", "value": "Maharashtra", "logical_group": "A" }
@@ -97,7 +147,20 @@
       "benefit_value_estimate": 20000,
       "conflict_group": null,
       "is_active": true,
-      "source_reference": "https://scholarships.gov.in/",
+      "links": {
+        "policy_url": "https://scholarships.gov.in/",
+        "official_scheme_url": "https://scholarships.gov.in/",
+        "application_url": "https://scholarships.gov.in/",
+        "renewal_url": "https://scholarships.gov.in/",
+        "grievance_url": null,
+        "source_url": "https://scholarships.gov.in/",
+        "application_link_status": "verified",
+        "last_verified_at": "2026-09-11T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched https://scholarships.gov.in/ (the National Scholarship Portal, the real, official, single government portal for post-matric SC/ST scholarships) on 2026-09-11 and confirmed live content.",
+          "The actual flow is two steps — a One-Time Registration (OTR) at /otrapplication/ using Aadhaar, then the scholarship application at /ApplicationForm/ — both under the confirmed-official scholarships.gov.in domain. The deep OTR page itself is a client-rendered SPA our fetch tool could not fully inspect, so the homepage (definitively confirmed) is used as application_url rather than an unverified deep link; renewal uses the same portal/OTR."
+        ]
+      },
       "rules": [
         { "field_name": "social_category", "operator": "in", "value": ["SC", "ST"], "logical_group": "A" },
         { "field_name": "education_level", "operator": "=", "value": "post_matric", "logical_group": "A" },
@@ -114,13 +177,26 @@
       "seed_key": "disability_pension",
       "name": "Disability Pension Scheme",
       "description": "Monthly pension for persons with a certified disability.",
-      "issuing_authority": "Ministry of Social Justice and Empowerment",
+      "issuing_authority": "Department of Empowerment of Persons with Disabilities",
       "category": "Social welfare & Empowerment",
       "benefit_type": "monthly_pension",
       "benefit_value_estimate": 9600,
       "conflict_group": null,
       "is_active": true,
-      "source_reference": "https://disabilityaffairs.gov.in/",
+      "links": {
+        "policy_url": "https://depwd.gov.in/",
+        "official_scheme_url": "https://depwd.gov.in/",
+        "application_url": null,
+        "renewal_url": null,
+        "grievance_url": null,
+        "source_url": "https://depwd.gov.in/",
+        "application_link_status": "state_specific",
+        "last_verified_at": "2026-09-11T00:00:00+00:00",
+        "verification_notes": [
+          "The original seed domain (disabilityaffairs.gov.in) returned an HTTP 301 redirect to depwd.gov.in when fetched directly — the department rebranded/moved domains; depwd.gov.in is now used as the current official reference instead of the stale one.",
+          "Directly confirmed on depwd.gov.in: there is no single centralized online disability-pension application form. The department's site is a gateway to scheme information and separate portals (e.g. the UDID/Swavlamban Card system for disability certification); actual disability pension is disbursed through NSAP (see old_age_pension's IGNDPS component) or state social welfare departments, which vary by state. 'Disability Pension Scheme' here is a generic representative name, not one specific real program with one portal — marked state_specific rather than asserting an incorrect single link."
+        ]
+      },
       "rules": [
         { "field_name": "disability_status", "operator": "=", "value": true, "logical_group": "A" }
       ],
@@ -140,7 +216,20 @@
       "benefit_value_estimate": 15000,
       "conflict_group": null,
       "is_active": true,
-      "source_reference": "https://www.msde.gov.in/",
+      "links": {
+        "policy_url": "https://www.msde.gov.in/",
+        "official_scheme_url": "https://www.msde.gov.in/",
+        "application_url": null,
+        "renewal_url": null,
+        "grievance_url": null,
+        "source_url": "https://www.msde.gov.in/",
+        "application_link_status": "unverified",
+        "last_verified_at": "2026-09-11T00:00:00+00:00",
+        "verification_notes": [
+          "Direct fetch of msde.gov.in returned an HTTP 403 (bot-blocked), so page content could not be independently inspected — msde.gov.in is a well-known, legitimate Ministry domain, but this could not be confirmed by actually reading the page, so it is left 'unverified' rather than 'verified'.",
+          "'Skill Development Training Stipend' is a generic representative name, not a specific real named program (e.g. PMKVY has its own separate portal, pmkvyofficial.org) — no single application_url is asserted to avoid misattributing one specific scheme's portal to this generic entry."
+        ]
+      },
       "rules": [
         { "field_name": "employment_status", "operator": "=", "value": "unemployed", "logical_group": "A" },
         { "field_name": "age", "operator": ">=", "value": 18, "logical_group": "A" },
@@ -162,7 +251,19 @@
       "benefit_value_estimate": 18000,
       "conflict_group": null,
       "is_active": true,
-      "source_reference": "https://example-state.gov.in/employment",
+      "links": {
+        "policy_url": null,
+        "official_scheme_url": null,
+        "application_url": null,
+        "renewal_url": null,
+        "grievance_url": null,
+        "source_url": null,
+        "application_link_status": "not_available",
+        "last_verified_at": "2026-09-11T00:00:00+00:00",
+        "verification_notes": [
+          "Representative/fictional demonstration scheme (see plan.md A-001), not tied to any real, identifiable state government program — same reasoning as state_housing_subsidy. The previous seed value ('https://example-state.gov.in/employment') was a placeholder domain, not a real government site. All link fields left null rather than inventing one."
+        ]
+      },
       "rules": [
         { "field_name": "employment_status", "operator": "=", "value": "unemployed", "logical_group": "A" },
         { "field_name": "education_level", "operator": "in", "value": ["secondary", "post_matric", "undergraduate", "postgraduate"], "logical_group": "A" }

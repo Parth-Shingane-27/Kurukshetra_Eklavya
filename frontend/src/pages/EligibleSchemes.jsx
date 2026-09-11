@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { evaluateEligibility } from "../api/client";
+import ApplyLink from "../components/ApplyLink";
 import JourneyNav from "../components/JourneyNav";
 import StatusBadge from "../components/StatusBadge";
 import { ErrorMessage, InfoMessage, LoadingMessage } from "../components/StateMessage";
@@ -72,12 +73,8 @@ export default function EligibleSchemes() {
                       </ul>
                     </div>
                   )}
-                  {r.status === "eligible" && r.application_link && (
-                    <div className="reasons">
-                      <a href={r.application_link} target="_blank" rel="noreferrer">
-                        Apply on the official portal ↗
-                      </a>
-                    </div>
+                  {r.status === "eligible" && (
+                    <ApplyLink url={r.application_url} status={r.application_link_status} schemeId={r.scheme_id} />
                   )}
                 </div>
                 <StatusBadge status={r.status} />

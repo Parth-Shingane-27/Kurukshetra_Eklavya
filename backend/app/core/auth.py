@@ -18,7 +18,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.core.config import get_settings
 from app.core.db import get_db
-from app.core.security import decode_access_token
+from app.core.security import decode_access_token, decode_assistance_token
 
 
 def _decode_bearer(authorization: str | None) -> dict | None:
@@ -114,6 +114,27 @@ async def check_owner_or_public(
     ):
         return
     raise HTTPException(status_code=403, detail="You do not have access to this profile")
+
+
+async def require_assistance_session(
+    authorization: str | None = Header(default=None),
+    origin: str | None = Header(default=None, alias="X-Assistance-Origin"),
+) -> dict:
+    """Gates every `/api/assistance/explain-*` call. `scheme_id`/`allowed_origin` come ONLY
+    from the signed `assistance_token` (never a client-supplied body field — see
+    FormAssistanceRequest's docstring) and the caller's actual origin must match what the
+    token was issued for, using the same header the browser itself sets (not spoofable by
+    page JS) — a stolen/replayed token from a different site still can't be used from that
+    site, only from the origin it was scoped to at `/assistance/validate-session` time.
+    """
+    payload = None
+    if authorization and authorization.lower().startswith("bearer "):
+        payload = decode_assistance_token(authorization.split(" ", 1)[1].strip())
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Missing or invalid assistance session")
+    if not origin or origin != payload.get("allowed_origin"):
+        raise HTTPException(status_code=403, detail="This origin is not authorized for this assistance session")
+    return {"scheme_id": payload["scheme_id"], "allowed_origin": payload["allowed_origin"]}
 
 
 async def citizen_id_for_bundle(db: AsyncIOMotorDatabase, bundle_id: str) -> str | None:

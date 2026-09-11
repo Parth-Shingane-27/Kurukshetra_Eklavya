@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import Response
 
 from app.api.agent import router as agent_router
+from app.api.assistance import router as assistance_router
 from app.api.assistant import router as assistant_router
 from app.api.auth import router as auth_router
 from app.api.bundle import router as bundle_router
@@ -43,6 +45,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def assistance_cors_middleware(request: Request, call_next):
+    """The /api/assistance/* routes must be callable from an arbitrary scheme application
+    domain — one that can't live in the static CORS_ORIGINS allowlist above, since it isn't
+    known until a curator sets that scheme's application_url (any government site, not ours).
+    Reflecting the request's own Origin (never "*") is safe here specifically because these
+    routes already independently verify the caller's Origin against the signed
+    assistance_token server-side (see require_assistance_session in app/core/auth.py) — this
+    middleware only controls whether the extension's JS is allowed to read the response, not
+    whether the request itself is authorized.
+    """
+    origin = request.headers.get("origin")
+    if origin and request.url.path.startswith("/api/assistance/"):
+        if request.method == "OPTIONS":
+            return Response(
+                status_code=200,
+                headers={
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Assistance-Origin",
+                    "Access-Control-Max-Age": "600",
+                },
+            )
+        response = await call_next(request)
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+        return response
+    return await call_next(request)
+
+
 app.include_router(health_router, tags=["health"])
 app.include_router(auth_router)
 app.include_router(citizens_router)
@@ -60,3 +93,4 @@ app.include_router(grievances_router)
 app.include_router(fraud_router)
 app.include_router(multilingual_router)
 app.include_router(assistant_router)
+app.include_router(assistance_router)

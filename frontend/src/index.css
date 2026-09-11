@@ -41,6 +41,35 @@ body {
   flex-direction: column;
 }
 
+.apply-link-block {
+  margin-top: 0.5rem;
+}
+
+.apply-link {
+  font-weight: 600;
+}
+
+.apply-link-verified .apply-link,
+.apply-link-success .apply-link {
+  color: var(--success);
+}
+
+.apply-link-unverified .apply-link,
+.apply-link-warning .apply-link {
+  color: var(--warning);
+}
+
+.apply-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0.25rem 0 0;
+}
+
+.apply-link-warning .apply-note,
+.apply-link-unverified .apply-note {
+  color: var(--warning);
+}
+
 .session-nav {
   display: flex;
   align-items: center;

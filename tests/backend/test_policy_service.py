@@ -140,7 +140,7 @@ async def test_retrieve_eligibility_rules_uses_curated_mongo_scheme_when_availab
         "rules": [{"field_name": "occupation", "operator": "=", "value": "farmer", "logical_group": "A"}],
         "document_requirements": [],
         "is_active": True,
-        "source_reference": "https://example.gov.in/scheme",
+        "links": {"source_url": "https://example.gov.in/scheme"},
     }
     inserted = await db.schemes.insert_one(scheme_doc)
     scheme_id = str(inserted.inserted_id)

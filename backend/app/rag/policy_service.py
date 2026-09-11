@@ -7,8 +7,9 @@ which this service is designed to respect, not encroach on.
 
 Grounding rule enforced here, not just documented: a scheme looked up in the curated Mongo
 `schemes` collection is labeled `source="curated_knowledge_base"` (the app's own validated
-data, still not an "official" third-party source unless `source_reference` is a real URL);
-anything from the vector corpus is labeled `source="dataset_provided"` since
+data, still not an "official" third-party source unless `links.source_url`/`links.policy_url`
+is a real, verified URL — see `SchemeLinks.application_link_status`, which this service does
+NOT read or upgrade based on); anything from the vector corpus is labeled `source="dataset_provided"` since
 `gov_schemes_cleaned.json` carries no verified source_url per scheme. Callers must not upgrade
 either label themselves.
 """
@@ -108,7 +109,8 @@ class PolicyKnowledgeService:
                         scheme_name=scheme["name"],
                         section="structured_rule",
                         source="curated_knowledge_base",
-                        source_url=scheme.get("source_reference"),
+                        source_url=(scheme.get("links") or {}).get("policy_url")
+                        or (scheme.get("links") or {}).get("source_url"),
                         metadata={"rules": scheme.get("rules", [])},
                     )
                 ]
@@ -134,7 +136,7 @@ class PolicyKnowledgeService:
                         scheme_name=scheme["name"],
                         section="structured_rule",
                         source="curated_knowledge_base",
-                        source_url=scheme.get("source_reference"),
+                        source_url=(scheme.get("links") or {}).get("source_url"),
                         metadata=req,
                     )
                     for req in reqs
@@ -180,7 +182,8 @@ class PolicyKnowledgeService:
                         scheme_name=scheme["name"],
                         section="structured_rule",
                         source="curated_knowledge_base",
-                        source_url=scheme.get("source_reference"),
+                        source_url=(scheme.get("links") or {}).get("grievance_url")
+                        or (scheme.get("links") or {}).get("source_url"),
                         metadata={"issuing_authority": scheme["issuing_authority"]},
                     )
                 ]

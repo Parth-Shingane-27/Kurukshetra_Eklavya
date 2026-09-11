@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import ApplyLink from "./ApplyLink";
 import Button from "./Button";
 import StatusBadge from "./StatusBadge";
 import { colors, radius, shadow, spacing } from "../theme";
 
-export default function SchemeCard({ scheme, matchStatus, reasons }) {
+export default function SchemeCard({ scheme, matchStatus, reasons, navigation }) {
   const [expanded, setExpanded] = useState(false);
   const categories = (scheme.category || "")
     .split(",")
@@ -32,6 +33,17 @@ export default function SchemeCard({ scheme, matchStatus, reasons }) {
         ₹{scheme.benefit_value_estimate.toLocaleString()}{" "}
         <Text style={styles.benefitType}>· {scheme.benefit_type.replaceAll("_", " ")}</Text>
       </Text>
+
+      {matchStatus === "eligible" && (
+        <ApplyLink
+          url={scheme.links?.application_url}
+          status={scheme.links?.application_link_status}
+          moreInfoUrl={scheme.links?.official_scheme_url}
+          schemeId={scheme.id}
+          schemeName={scheme.name}
+          navigation={navigation}
+        />
+      )}
 
       <Button
         title={expanded ? "Hide requirements ▲" : "Requirements & documents ▼"}

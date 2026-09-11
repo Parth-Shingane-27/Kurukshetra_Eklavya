@@ -16,4 +16,8 @@ db.users.createIndex({ email: 1 }, { unique: true });
 db.pending_logins.createIndex({ pending_token: 1 }, { unique: true });
 db.pending_logins.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
 
+// Context-Aware Form Assistance session handshake
+db.assistance_sessions.createIndex({ session_id: 1 }, { unique: true });
+db.assistance_sessions.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
+
 print("Indexes created.");

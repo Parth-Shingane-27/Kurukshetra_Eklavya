@@ -26,6 +26,15 @@ class Settings(BaseSettings):
     resend_api_key: str | None = None
     resend_from_email: str = "ASBO <onboarding@resend.dev>"
 
+    # Context-Aware Form Assistance (browser extension / mobile toggle)
+    assistance_session_expire_seconds: int = 900
+    """How long the opaque session_id (minted when a citizen clicks "Apply Now") stays
+    exchangeable for an assistance_token — covers "citizen clicks Apply, extension loads,
+    validates" without staying valid indefinitely."""
+    assistance_token_expire_seconds: int = 1800
+    """How long the exchanged assistance_token itself is usable for explain-text calls —
+    longer than the session_id's window since the citizen may spend real time on the form."""
+
     seed_schemes_on_startup: bool = True
 
     # RAG layer (Section: Shared Policy Knowledge Service)

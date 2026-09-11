@@ -96,7 +96,13 @@ async def test_update_scheme_not_found(client):
 
 
 async def test_scheme_application_link_surfaces_in_eligibility_results(client):
-    scheme = {**VALID_SCHEME, "application_link": "https://example.gov.in/apply/widow-pension"}
+    scheme = {
+        **VALID_SCHEME,
+        "links": {
+            "application_url": "https://example.gov.in/apply/widow-pension",
+            "application_link_status": "verified",
+        },
+    }
     await client.post("/api/schemes", json=scheme, headers=ADMIN_HEADERS)
 
     citizen_res = await client.post(
@@ -115,7 +121,31 @@ async def test_scheme_application_link_surfaces_in_eligibility_results(client):
     assert eval_res.status_code == 200
     result = next(r for r in eval_res.json()["results"] if r["scheme_name"] == "Test Widow Pension Scheme")
     assert result["status"] == "eligible"
-    assert result["application_link"] == "https://example.gov.in/apply/widow-pension"
+    assert result["application_url"] == "https://example.gov.in/apply/widow-pension"
+    assert result["application_link_status"] == "verified"
+
+
+async def test_scheme_links_update_merges_without_clobbering_other_fields(client):
+    scheme = {
+        **VALID_SCHEME,
+        "links": {
+            "source_url": "https://example.gov.in/scheme",
+            "application_link_status": "unverified",
+        },
+    }
+    created = await client.post("/api/schemes", json=scheme, headers=ADMIN_HEADERS)
+    scheme_id = created.json()["id"]
+
+    res = await client.put(
+        f"/api/schemes/{scheme_id}",
+        json={"links": {"application_url": "https://example.gov.in/apply", "application_link_status": "verified"}},
+        headers=ADMIN_HEADERS,
+    )
+    assert res.status_code == 200
+    links = res.json()["links"]
+    assert links["application_url"] == "https://example.gov.in/apply"
+    assert links["application_link_status"] == "verified"
+    assert links["source_url"] == "https://example.gov.in/scheme"  # untouched by the partial update
 
 
 async def test_admin_created_scheme_affects_subsequent_evaluation(client, db):

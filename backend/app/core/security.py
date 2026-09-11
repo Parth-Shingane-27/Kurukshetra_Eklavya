@@ -40,6 +40,30 @@ def decode_access_token(token: str) -> dict | None:
         return None
 
 
+def create_assistance_token(*, scheme_id: str, allowed_origin: str) -> str:
+    """A distinct `typ: "assistance"` claim keeps this from ever being accepted by
+    `get_current_user`/`require_admin` (which only ever see a login-issued token) or vice
+    versa — the two token kinds are not interchangeable even though they share a signing key.
+    """
+    settings = get_settings()
+    now = datetime.now(timezone.utc)
+    payload = {
+        "typ": "assistance",
+        "scheme_id": scheme_id,
+        "allowed_origin": allowed_origin,
+        "iat": now,
+        "exp": now + timedelta(seconds=settings.assistance_token_expire_seconds),
+    }
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+
+
+def decode_assistance_token(token: str) -> dict | None:
+    payload = decode_access_token(token)
+    if payload is None or payload.get("typ") != "assistance":
+        return None
+    return payload
+
+
 def generate_otp_code() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
 

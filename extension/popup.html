@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>ASBO Form Assistant</title>
+    <style>
+      body {
+        width: 280px;
+        font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+        margin: 0;
+        padding: 16px;
+        color: #1f2430;
+      }
+      h1 {
+        font-size: 15px;
+        margin: 0 0 8px;
+      }
+      p {
+        font-size: 12.5px;
+        color: #5b6270;
+        line-height: 1.5;
+        margin: 0 0 10px;
+      }
+      .status {
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 12.5px;
+        font-weight: 600;
+        margin-bottom: 10px;
+      }
+      .status-active {
+        background: #e7f5ec;
+        color: #1e6b3c;
+      }
+      .status-inactive {
+        background: #eef0f3;
+        color: #5b6270;
+      }
+      .privacy {
+        font-size: 11.5px;
+        color: #5b6270;
+        border-top: 1px solid #e0e1e6;
+        padding-top: 10px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ASBO Form Assistant</h1>
+    <div id="status" class="status status-inactive">Checking this tab…</div>
+    <p>
+      This extension only activates on a scheme application page opened through the ASBO
+      platform's own verified "Apply Now" link — it does nothing on any other website.
+    </p>
+    <div class="privacy">
+      Selected text is sent to ASBO's backend only when you click "Explain this." No screenshots,
+      passwords, or full-page content are captured or stored. See the ASBO platform's privacy
+      notice for details.
+    </div>
+  </body>
+  <script src="popup.js"></script>
+</html>

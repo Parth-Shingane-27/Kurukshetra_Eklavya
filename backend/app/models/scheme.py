@@ -1,9 +1,65 @@
 from datetime import datetime
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 ALLOWED_OPERATORS = {"=", "<", "<=", ">", ">=", "in"}
+
+
+class LinkVerificationStatus(str, Enum):
+    """How confidently `SchemeLinks.application_url` (or the absence of one) has been
+    established — never inferred from "the URL returned HTTP 200"; only ever set by a human
+    curator or an explicit verification step that actually read the destination page.
+    """
+
+    verified = "verified"
+    """A human (or a verification step whose output a human reviewed) confirmed this is the
+    correct, current, official destination for this specific scheme."""
+    unverified = "unverified"
+    """A URL is present but has not been confirmed — e.g. curator-entered without a
+    verification pass, or a verification attempt was inconclusive (fetch blocked, geo-restricted,
+    site requires JS rendering we couldn't inspect). Never presented to citizens as "official."""
+    not_available = "not_available"
+    """Confirmed there is no online self-application for this scheme — e.g. beneficiary
+    selection happens via a government survey, or applications only route through an offline/
+    in-person process. Distinct from `unverified`: this is a positive finding, not a gap."""
+    state_specific = "state_specific"
+    """The correct destination depends on the citizen's state/department and no single national
+    URL applies — avoid picking one state's portal and presenting it as universal."""
+
+
+class SchemeLinks(BaseModel):
+    """Distinguishes the different official URLs a scheme can have (Section 13 extension) —
+    a policy/information page, a scheme's own homepage, the actual application form, a renewal
+    portal, and a grievance portal are frequently different destinations and must never be
+    conflated into one link."""
+
+    policy_url: str | None = None
+    official_scheme_url: str | None = None
+    application_url: str | None = None
+    renewal_url: str | None = None
+    grievance_url: str | None = None
+    source_url: str | None = None
+    application_link_status: LinkVerificationStatus = LinkVerificationStatus.unverified
+    last_verified_at: datetime | None = None
+    verification_notes: list[str] = Field(default_factory=list)
+
+
+class SchemeLinksUpdate(BaseModel):
+    """All fields optional so PUT /api/schemes/:id can patch a single link field (e.g. just
+    re-verify `application_url`) without clobbering the rest of `links` — merged at the storage
+    layer via dot-notation `$set`, not a full-document replace (see scheme_kb/service.py)."""
+
+    policy_url: str | None = None
+    official_scheme_url: str | None = None
+    application_url: str | None = None
+    renewal_url: str | None = None
+    grievance_url: str | None = None
+    source_url: str | None = None
+    application_link_status: LinkVerificationStatus | None = None
+    last_verified_at: datetime | None = None
+    verification_notes: list[str] | None = None
 
 
 class SchemeRule(BaseModel):
@@ -63,12 +119,10 @@ class SchemeBase(BaseModel):
     benefit_value_estimate: float
     conflict_group: str | None = None
     is_active: bool = True
-    source_reference: str | None = None
-    application_link: str | None = None
-    """Official government registration/application form URL for this scheme — distinct from
-    `source_reference` (a general citation/source), this is specifically where a citizen goes
-    to apply. Curated manually for now (see plan.md FR-014/FR-015 for the eventual automated
-    freshness layer)."""
+    links: SchemeLinks = Field(default_factory=SchemeLinks)
+    """Replaces the earlier flat `source_reference`/`application_link` strings (migrated) —
+    see `SchemeLinks` for why a scheme's policy page, official homepage, application form,
+    renewal portal, and grievance portal must be tracked separately rather than as one URL."""
     rules: list[SchemeRule] = Field(default_factory=list)
     document_requirements: list[SchemeDocumentRequirement] = Field(default_factory=list)
 
@@ -89,8 +143,7 @@ class SchemeUpdate(BaseModel):
     benefit_value_estimate: float | None = None
     conflict_group: str | None = None
     is_active: bool | None = None
-    source_reference: str | None = None
-    application_link: str | None = None
+    links: SchemeLinksUpdate | None = None
     rules: list[SchemeRule] | None = None
     document_requirements: list[SchemeDocumentRequirement] | None = None
 

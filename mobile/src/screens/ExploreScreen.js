@@ -62,7 +62,7 @@ function normalizeFilters(filters) {
 
 const STATUS_RANK = { eligible: 0, indeterminate: 1, not_eligible: 2 };
 
-export default function ExploreScreen() {
+export default function ExploreScreen({ navigation }) {
   const { citizen } = useCitizen();
   const [allSchemes, setAllSchemes] = useState([]);
   const [schemesError, setSchemesError] = useState(null);
@@ -136,7 +136,9 @@ export default function ExploreScreen() {
             {allSchemes.length === 0 && !schemesError && <LoadingMessage>Loading scheme catalogue…</LoadingMessage>}
           </>
         }
-        renderItem={({ item }) => <SchemeCard scheme={item.scheme} matchStatus={item.status} reasons={item.reasons} />}
+        renderItem={({ item }) => (
+          <SchemeCard scheme={item.scheme} matchStatus={item.status} reasons={item.reasons} navigation={navigation} />
+        )}
         ListEmptyComponent={allSchemes.length > 0 ? <InfoMessage>No schemes match your search.</InfoMessage> : null}
       />
     </SafeAreaView>

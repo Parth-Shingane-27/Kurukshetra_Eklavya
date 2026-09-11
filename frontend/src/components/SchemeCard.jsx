@@ -1,3 +1,4 @@
+import ApplyLink from "./ApplyLink";
 import StatusBadge from "./StatusBadge";
 
 export default function SchemeCard({ scheme, matchStatus, reasons }) {
@@ -27,6 +28,15 @@ export default function SchemeCard({ scheme, matchStatus, reasons }) {
         ₹{scheme.benefit_value_estimate.toLocaleString()}
         <span> · {scheme.benefit_type.replaceAll("_", " ")}</span>
       </div>
+
+      {matchStatus === "eligible" && (
+        <ApplyLink
+          url={scheme.links?.application_url}
+          status={scheme.links?.application_link_status}
+          moreInfoUrl={scheme.links?.official_scheme_url}
+          schemeId={scheme.id}
+        />
+      )}
 
       <details className="scheme-card-details">
         <summary>Requirements &amp; documents</summary>

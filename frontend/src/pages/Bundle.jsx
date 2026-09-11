@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { detectConflicts, getScheme, optimizeBundle } from "../api/client";
+import ApplyLink from "../components/ApplyLink";
 import JourneyNav from "../components/JourneyNav";
 import { ErrorMessage, InfoMessage, LoadingMessage } from "../components/StateMessage";
 
@@ -85,13 +86,12 @@ export default function Bundle() {
                 <div>
                   <strong>{s.name}</strong>
                   <div className="reasons">₹{s.benefit_value_estimate.toLocaleString()} · {s.category}</div>
-                  {s.application_link && (
-                    <div className="reasons">
-                      <a href={s.application_link} target="_blank" rel="noreferrer">
-                        Apply on the official portal ↗
-                      </a>
-                    </div>
-                  )}
+                  <ApplyLink
+                    url={s.links?.application_url}
+                    status={s.links?.application_link_status}
+                    moreInfoUrl={s.links?.official_scheme_url}
+                    schemeId={s.id}
+                  />
                 </div>
               </div>
             ))}

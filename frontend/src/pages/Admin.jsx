@@ -8,8 +8,16 @@ import {
   updateScheme,
 } from "../api/client";
 import { getUser, isLoggedIn, subscribe } from "../auth/session";
+import ApplyLink from "../components/ApplyLink";
 import { SelectField, TextField } from "../components/FormField";
 import { ErrorMessage, InfoMessage, LoadingMessage } from "../components/StateMessage";
+
+const LINK_STATUS_OPTIONS = [
+  { value: "unverified", label: "Unverified — link present but not confirmed" },
+  { value: "verified", label: "Verified — confirmed official destination" },
+  { value: "not_available", label: "Not available — no online application exists" },
+  { value: "state_specific", label: "State-specific — varies by state/department" },
+];
 
 const OPERATOR_OPTIONS = [
   { value: "=", label: "= (equals)" },
@@ -28,8 +36,14 @@ const EMPTY_SCHEME_FORM = {
   benefit_type: "",
   benefit_value_estimate: "",
   conflict_group: "",
-  source_reference: "",
-  application_link: "",
+  policy_url: "",
+  official_scheme_url: "",
+  application_url: "",
+  renewal_url: "",
+  grievance_url: "",
+  source_url: "",
+  application_link_status: "unverified",
+  verification_notes: "",
 };
 
 const EMPTY_CONFLICT_FORM = { scheme_a_id: "", scheme_b_id: "", conflict_type: "mutually_exclusive", reason: "" };
@@ -65,6 +79,8 @@ function mapFieldErrors(fieldErrors) {
       const idx = loc[2];
       const field = loc[3] || "_row";
       docErrors[idx] = { ...docErrors[idx], [field]: fe.msg };
+    } else if (loc[1] === "links" && loc[2]) {
+      top[`links.${loc[2]}`] = fe.msg;
     } else if (loc.length === 2) {
       top[loc[1]] = fe.msg;
     } else {
@@ -169,8 +185,14 @@ export default function Admin() {
       benefit_type: scheme.benefit_type,
       benefit_value_estimate: String(scheme.benefit_value_estimate),
       conflict_group: scheme.conflict_group || "",
-      source_reference: scheme.source_reference || "",
-      application_link: scheme.application_link || "",
+      policy_url: scheme.links?.policy_url || "",
+      official_scheme_url: scheme.links?.official_scheme_url || "",
+      application_url: scheme.links?.application_url || "",
+      renewal_url: scheme.links?.renewal_url || "",
+      grievance_url: scheme.links?.grievance_url || "",
+      source_url: scheme.links?.source_url || "",
+      application_link_status: scheme.links?.application_link_status || "unverified",
+      verification_notes: (scheme.links?.verification_notes || []).join("\n"),
     });
     setRules(
       scheme.rules.map((r) => ({
@@ -219,8 +241,20 @@ export default function Admin() {
         benefit_type: form.benefit_type.trim(),
         benefit_value_estimate: Number(form.benefit_value_estimate),
         conflict_group: form.conflict_group.trim() || undefined,
-        source_reference: form.source_reference.trim() || undefined,
-        application_link: form.application_link.trim() || undefined,
+        links: {
+          policy_url: form.policy_url.trim() || undefined,
+          official_scheme_url: form.official_scheme_url.trim() || undefined,
+          application_url: form.application_url.trim() || undefined,
+          renewal_url: form.renewal_url.trim() || undefined,
+          grievance_url: form.grievance_url.trim() || undefined,
+          source_url: form.source_url.trim() || undefined,
+          application_link_status: form.application_link_status,
+          last_verified_at: form.application_link_status === "verified" ? new Date().toISOString() : undefined,
+          verification_notes: form.verification_notes
+            .split("\n")
+            .map((n) => n.trim())
+            .filter(Boolean),
+        },
         rules: rules.map((r) => ({
           field_name: r.field_name.trim(),
           operator: r.operator,
@@ -323,12 +357,13 @@ export default function Admin() {
                 {s.conflict_group && ` · conflict group: ${s.conflict_group}`}
                 {!s.is_active && " · inactive"}
               </div>
-              {s.application_link && (
-                <div className="reasons">
-                  <a href={s.application_link} target="_blank" rel="noreferrer">
-                    Registration / application form ↗
-                  </a>
-                </div>
+              <ApplyLink
+                url={s.links?.application_url}
+                status={s.links?.application_link_status}
+                moreInfoUrl={s.links?.official_scheme_url}
+              />
+              {s.links?.last_verified_at && (
+                <div className="reasons">Last verified: {new Date(s.links.last_verified_at).toLocaleDateString()}</div>
               )}
             </div>
             <div className="actions">
@@ -395,26 +430,82 @@ export default function Admin() {
             error={topErrors.conflict_group}
             hint="Schemes sharing a group conflict (BR-005)"
           />
-          <TextField
-            label="Source reference (URL)"
-            name="source_reference"
-            value={form.source_reference}
-            onChange={handleFormChange}
-            error={topErrors.source_reference}
-          />
-          <TextField
-            label="Registration / application form link"
-            name="application_link"
-            value={form.application_link}
-            onChange={handleFormChange}
-            error={topErrors.application_link}
-            hint="Official government URL where a citizen applies for this scheme"
-          />
         </div>
         <div className="field">
           <label htmlFor="description">Description</label>
           <input id="description" name="description" value={form.description} onChange={handleFormChange} />
         </div>
+
+        <fieldset>
+          <legend>Links (policy, application, renewal, grievance — kept separate, never assumed to be the same URL)</legend>
+          <div className="form-grid">
+            <TextField
+              label="Policy / eligibility details URL"
+              name="policy_url"
+              value={form.policy_url}
+              onChange={handleFormChange}
+              error={topErrors["links.policy_url"]}
+              hint="Where the eligibility rules/criteria are published"
+            />
+            <TextField
+              label="Official scheme homepage"
+              name="official_scheme_url"
+              value={form.official_scheme_url}
+              onChange={handleFormChange}
+              error={topErrors["links.official_scheme_url"]}
+            />
+            <TextField
+              label="Application form URL"
+              name="application_url"
+              value={form.application_url}
+              onChange={handleFormChange}
+              error={topErrors["links.application_url"]}
+              hint="Where a citizen actually applies — leave blank if there is no online application"
+            />
+            <TextField
+              label="Renewal URL"
+              name="renewal_url"
+              value={form.renewal_url}
+              onChange={handleFormChange}
+              error={topErrors["links.renewal_url"]}
+            />
+            <TextField
+              label="Grievance / complaint portal URL"
+              name="grievance_url"
+              value={form.grievance_url}
+              onChange={handleFormChange}
+              error={topErrors["links.grievance_url"]}
+            />
+            <TextField
+              label="Source / citation URL"
+              name="source_url"
+              value={form.source_url}
+              onChange={handleFormChange}
+              error={topErrors["links.source_url"]}
+            />
+            <SelectField
+              label="Application link status"
+              name="application_link_status"
+              value={form.application_link_status}
+              onChange={handleFormChange}
+              options={LINK_STATUS_OPTIONS}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="verification_notes">Verification notes (one per line)</label>
+            <textarea
+              id="verification_notes"
+              name="verification_notes"
+              rows={3}
+              value={form.verification_notes}
+              onChange={handleFormChange}
+            />
+            <span className="hint">
+              Record what you actually checked (e.g. "fetched the page directly, confirmed a live
+              registration form") — never mark "Verified" without a real check.
+            </span>
+          </div>
+        </fieldset>
 
         <fieldset>
           <legend>Eligibility rules</legend>

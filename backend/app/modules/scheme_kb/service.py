@@ -78,6 +78,13 @@ async def update_scheme(db: AsyncIOMotorDatabase, scheme_id: str, payload: Schem
     oid = _to_object_id(scheme_id)
     updates = payload.model_dump(mode="json", exclude_unset=True)
     if updates:
+        # `links` is patched field-by-field via dot notation (e.g. "links.application_url")
+        # rather than replacing the whole sub-document, so re-verifying one URL never
+        # clobbers the other, unrelated link fields already stored on the scheme.
+        links_patch = updates.pop("links", None)
+        if links_patch:
+            for key, value in links_patch.items():
+                updates[f"links.{key}"] = value
         updates["updated_at"] = datetime.now(timezone.utc)
         result = await db.schemes.update_one({"_id": oid}, {"$set": updates})
         if result.matched_count == 0:

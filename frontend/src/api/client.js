@@ -147,3 +147,9 @@ export function generateChecklist(bundleId) {
 export function getTrace(citizenId) {
   return request(`/api/agent/trace/${citizenId}`);
 }
+
+// Context-Aware Form Assistance — mints the short-lived session the browser extension /
+// mobile toggle validates before it will activate on the application page (see ApplyLink.jsx).
+export function createAssistanceSession(schemeId) {
+  return post("/api/assistance/session", { scheme_id: schemeId });
+}

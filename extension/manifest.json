@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "ASBO Form Assistant",
+  "version": "0.1.0",
+  "description": "Explains unclear government scheme application form questions — only on pages opened through the ASBO platform's own verified 'Apply Now' link.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ASBO Form Assistant"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["webNavigation", "scripting", "storage"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "web_accessible_resources": [
+    {
+      "resources": ["injected_styles.css"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ]
+}

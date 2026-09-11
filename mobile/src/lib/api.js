@@ -92,3 +92,27 @@ export function generateChecklist(bundleId) {
 export function getTrace(citizenId) {
   return request(`/api/agent/trace/${citizenId}`);
 }
+
+// Context-Aware Form Assistance — mirrors frontend/src/api/client.js's assistance functions.
+// `originOf` avoids depending on the WHATWG URL global (inconsistent across Hermes versions);
+// a scheme's application_url is always a well-formed http(s) URL from our own backend, so a
+// simple regex is sufficient and avoids a runtime surprise on an older engine.
+export function originOf(url) {
+  const match = /^([a-z][a-z0-9+.-]*:\/\/[^/]+)/i.exec(url);
+  return match ? match[1] : url;
+}
+
+export function createAssistanceSession(schemeId) {
+  return post("/api/assistance/session", { scheme_id: schemeId });
+}
+
+export function validateAssistanceSession(sessionId, origin) {
+  return post("/api/assistance/validate-session", { session_id: sessionId, origin });
+}
+
+export function explainFormText({ assistanceToken, origin, ...payload }) {
+  return post("/api/assistance/explain-text", payload, {
+    Authorization: `Bearer ${assistanceToken}`,
+    "X-Assistance-Origin": origin,
+  });
+}

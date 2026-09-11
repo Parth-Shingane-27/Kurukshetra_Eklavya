@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import MainTabs from "./src/navigation/MainTabs";
+import ApplicationWebViewScreen from "./src/screens/ApplicationWebViewScreen";
 import BundleScreen from "./src/screens/BundleScreen";
 import ChecklistScreen from "./src/screens/ChecklistScreen";
 import EligibilityScreen from "./src/screens/EligibilityScreen";
@@ -36,6 +37,11 @@ export default function App() {
             <Stack.Screen name="Bundle" component={BundleScreen} options={{ title: "Optimized bundle" }} />
             <Stack.Screen name="Checklist" component={ChecklistScreen} options={{ title: "Checklist" }} />
             <Stack.Screen name="Trace" component={TraceScreen} options={{ title: "Reasoning trace" }} />
+            <Stack.Screen
+              name="ApplicationWebView"
+              component={ApplicationWebViewScreen}
+              options={({ route }) => ({ title: route.params?.schemeName || "Application" })}
+            />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>
