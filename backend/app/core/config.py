@@ -14,6 +14,15 @@ class Settings(BaseSettings):
 
     admin_credential: str = "change-me-admin-token"
 
+    # Two-step (email+password+OTP) auth — FR-016
+    jwt_secret: str = "change-me-jwt-secret"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60
+    otp_expire_seconds: int = 300
+    otp_max_attempts: int = 5
+    resend_api_key: str | None = None
+    resend_from_email: str = "ASBO <onboarding@resend.dev>"
+
     seed_schemes_on_startup: bool = True
 
     # Comma-separated list — the frontend dev server (5173) and its production preview (4173)

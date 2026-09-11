@@ -61,5 +61,8 @@ class DocumentsDeclare(BaseModel):
 
 class CitizenOut(CitizenBase):
     id: str
+    owner_user_id: str | None = None
+    """Set automatically when the profile is created by a logged-in citizen (FR-016); null for
+    profiles created anonymously/by an assisted-service operator, which remain open as before."""
     created_at: datetime
     updated_at: datetime

@@ -11,4 +11,9 @@ db.bundles.createIndex({ citizen_id: 1 });
 db.schemes.createIndex({ is_active: 1 });
 db.schemes.createIndex({ category: 1 });
 
+// Two-step (email+password+OTP) authentication (FR-016)
+db.users.createIndex({ email: 1 }, { unique: true });
+db.pending_logins.createIndex({ pending_token: 1 }, { unique: true });
+db.pending_logins.createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
+
 print("Indexes created.");
