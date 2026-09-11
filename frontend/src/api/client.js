@@ -1,3 +1,5 @@
+import { getToken } from "../auth/session";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export class ApiError extends Error {
@@ -32,9 +34,11 @@ function formatErrorDetail(detail) {
 
 async function request(path, options = {}) {
   const { headers: customHeaders, ...rest } = options;
+  const token = getToken();
+  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...rest,
-    headers: { "Content-Type": "application/json", ...customHeaders },
+    headers: { "Content-Type": "application/json", ...authHeader, ...customHeaders },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -54,7 +58,29 @@ function put(path, body, headers) {
 }
 
 export function adminHeaders(token) {
-  return { "X-Admin-Token": token };
+  return token ? { "X-Admin-Token": token } : {};
+}
+
+// FR-016 — two-step (email+password+OTP) authentication.
+export function registerAccount({ email, password, role, adminBootstrapCredential }) {
+  return post("/api/auth/register", {
+    email,
+    password,
+    role,
+    admin_bootstrap_credential: adminBootstrapCredential || undefined,
+  });
+}
+
+export function loginStep1(email, password) {
+  return post("/api/auth/login", { email, password });
+}
+
+export function verifyOtpStep2(pendingToken, code) {
+  return post("/api/auth/verify-otp", { pending_token: pendingToken, code });
+}
+
+export function getMe() {
+  return request("/api/auth/me");
 }
 
 export function getHealth() {

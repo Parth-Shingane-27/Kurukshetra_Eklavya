@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.agent import router as agent_router
 from app.api.assistant import router as assistant_router
+from app.api.auth import router as auth_router
 from app.api.bundle import router as bundle_router
 from app.api.checklist import router as checklist_router
 from app.api.citizens import router as citizens_router
@@ -43,6 +44,7 @@ app.add_middleware(
 )
 
 app.include_router(health_router, tags=["health"])
+app.include_router(auth_router)
 app.include_router(citizens_router)
 app.include_router(schemes_router)
 app.include_router(eligibility_router)

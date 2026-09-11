@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   createConflictRule,
   createScheme,
@@ -6,6 +7,7 @@ import {
   listSchemes,
   updateScheme,
 } from "../api/client";
+import { getUser, isLoggedIn, subscribe } from "../auth/session";
 import { SelectField, TextField } from "../components/FormField";
 import { ErrorMessage, InfoMessage, LoadingMessage } from "../components/StateMessage";
 
@@ -72,7 +74,8 @@ function mapFieldErrors(fieldErrors) {
 }
 
 export default function Admin() {
-  const [adminToken, setAdminToken] = useState(() => localStorage.getItem("asbo_admin_token") || "");
+  const [sessionUser, setSessionUser] = useState(getUser());
+  const isAdmin = isLoggedIn() && sessionUser?.role === "admin";
   const [schemes, setSchemes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
@@ -121,11 +124,7 @@ export default function Admin() {
     loadConflictRulesList();
   }, [loadSchemes, loadConflictRulesList]);
 
-  function handleTokenChange(e) {
-    const value = e.target.value;
-    setAdminToken(value);
-    localStorage.setItem("asbo_admin_token", value);
-  }
+  useEffect(() => subscribe(() => setSessionUser(getUser())), []);
 
   function handleFormChange(e) {
     const { name, value } = e.target;
@@ -194,7 +193,7 @@ export default function Admin() {
   async function toggleActive(scheme) {
     setLoadError(null);
     try {
-      await updateScheme(scheme.id, { is_active: !scheme.is_active }, adminToken);
+      await updateScheme(scheme.id, { is_active: !scheme.is_active });
       await loadSchemes();
     } catch (err) {
       setLoadError(err);
@@ -204,8 +203,8 @@ export default function Admin() {
   async function handleSubmitScheme(e) {
     e.preventDefault();
     clearFormErrors();
-    if (!adminToken) {
-      setFormError("Enter the admin token above first.");
+    if (!isAdmin) {
+      setFormError("Log in with an admin account first.");
       return;
     }
     setSubmitting(true);
@@ -231,9 +230,9 @@ export default function Admin() {
         })),
       };
       if (editingId) {
-        await updateScheme(editingId, payload, adminToken);
+        await updateScheme(editingId, payload);
       } else {
-        await createScheme(payload, adminToken);
+        await createScheme(payload);
       }
       cancelEdit();
       await loadSchemes();
@@ -262,8 +261,8 @@ export default function Admin() {
   async function handleDeclareConflict(e) {
     e.preventDefault();
     setConflictFormError(null);
-    if (!adminToken) {
-      setConflictFormError("Enter the admin token above first.");
+    if (!isAdmin) {
+      setConflictFormError("Log in with an admin account first.");
       return;
     }
     if (!conflictForm.scheme_a_id || !conflictForm.scheme_b_id) {
@@ -272,15 +271,12 @@ export default function Admin() {
     }
     setConflictSubmitting(true);
     try {
-      await createConflictRule(
-        {
-          scheme_a_id: conflictForm.scheme_a_id,
-          scheme_b_id: conflictForm.scheme_b_id,
-          conflict_type: conflictForm.conflict_type.trim() || "mutually_exclusive",
-          reason: conflictForm.reason.trim() || undefined,
-        },
-        adminToken
-      );
+      await createConflictRule({
+        scheme_a_id: conflictForm.scheme_a_id,
+        scheme_b_id: conflictForm.scheme_b_id,
+        conflict_type: conflictForm.conflict_type.trim() || "mutually_exclusive",
+        reason: conflictForm.reason.trim() || undefined,
+      });
       setConflictForm(EMPTY_CONFLICT_FORM);
       await loadConflictRulesList();
     } catch (err) {
@@ -300,11 +296,14 @@ export default function Admin() {
       </div>
 
       <div className="card">
-        <div className="field">
-          <label htmlFor="admin_token">Admin token</label>
-          <input id="admin_token" type="password" value={adminToken} onChange={handleTokenChange} />
-          <span className="hint">Stored only in this browser; sent as the X-Admin-Token header on writes.</span>
-        </div>
+        {isAdmin ? (
+          <InfoMessage>Logged in as {sessionUser.email} (admin) — write actions below are enabled.</InfoMessage>
+        ) : (
+          <InfoMessage>
+            <Link to="/login">Log in</Link> with an admin account to create/edit schemes or declare
+            conflicts. Browsing the existing knowledge base below doesn't require logging in.
+          </InfoMessage>
+        )}
       </div>
 
       <div className="card">

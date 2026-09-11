@@ -41,6 +41,18 @@ body {
   flex-direction: column;
 }
 
+.session-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 0.6rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
 a {
   color: var(--accent);
 }

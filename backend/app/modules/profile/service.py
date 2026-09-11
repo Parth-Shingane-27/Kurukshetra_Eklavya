@@ -21,9 +21,12 @@ def _serialize(doc: dict) -> dict:
     return doc
 
 
-async def create_citizen(db: AsyncIOMotorDatabase, payload: CitizenCreate) -> dict:
+async def create_citizen(
+    db: AsyncIOMotorDatabase, payload: CitizenCreate, owner_user_id: str | None = None
+) -> dict:
     now = datetime.now(timezone.utc)
     doc = payload.model_dump(mode="json")
+    doc["owner_user_id"] = owner_user_id
     doc["created_at"] = now
     doc["updated_at"] = now
     result = await db.citizens.insert_one(doc)
