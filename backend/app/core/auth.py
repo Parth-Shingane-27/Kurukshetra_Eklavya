@@ -114,3 +114,17 @@ async def check_owner_or_public(
     ):
         return
     raise HTTPException(status_code=403, detail="You do not have access to this profile")
+
+
+async def citizen_id_for_bundle(db: AsyncIOMotorDatabase, bundle_id: str) -> str | None:
+    """Looks up the owning citizen_id for a bundle_id, for routes (checklist.py) that only
+    receive a bundle_id, not a citizen_id — so `check_owner_or_public` still has something to
+    check against. Returns None (rather than raising) on a bad/missing id; the route's own
+    service call still reports the real 404 for that case.
+    """
+    try:
+        oid = ObjectId(bundle_id)
+    except (InvalidId, TypeError):
+        return None
+    bundle = await db.bundles.find_one({"_id": oid}, {"citizen_id": 1})
+    return str(bundle["citizen_id"]) if bundle else None

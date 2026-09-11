@@ -29,6 +29,7 @@ const EMPTY_SCHEME_FORM = {
   benefit_value_estimate: "",
   conflict_group: "",
   source_reference: "",
+  application_link: "",
 };
 
 const EMPTY_CONFLICT_FORM = { scheme_a_id: "", scheme_b_id: "", conflict_type: "mutually_exclusive", reason: "" };
@@ -169,6 +170,7 @@ export default function Admin() {
       benefit_value_estimate: String(scheme.benefit_value_estimate),
       conflict_group: scheme.conflict_group || "",
       source_reference: scheme.source_reference || "",
+      application_link: scheme.application_link || "",
     });
     setRules(
       scheme.rules.map((r) => ({
@@ -218,6 +220,7 @@ export default function Admin() {
         benefit_value_estimate: Number(form.benefit_value_estimate),
         conflict_group: form.conflict_group.trim() || undefined,
         source_reference: form.source_reference.trim() || undefined,
+        application_link: form.application_link.trim() || undefined,
         rules: rules.map((r) => ({
           field_name: r.field_name.trim(),
           operator: r.operator,
@@ -320,6 +323,13 @@ export default function Admin() {
                 {s.conflict_group && ` · conflict group: ${s.conflict_group}`}
                 {!s.is_active && " · inactive"}
               </div>
+              {s.application_link && (
+                <div className="reasons">
+                  <a href={s.application_link} target="_blank" rel="noreferrer">
+                    Registration / application form ↗
+                  </a>
+                </div>
+              )}
             </div>
             <div className="actions">
               <button type="button" className="secondary" onClick={() => startEdit(s)}>
@@ -391,6 +401,14 @@ export default function Admin() {
             value={form.source_reference}
             onChange={handleFormChange}
             error={topErrors.source_reference}
+          />
+          <TextField
+            label="Registration / application form link"
+            name="application_link"
+            value={form.application_link}
+            onChange={handleFormChange}
+            error={topErrors.application_link}
+            hint="Official government URL where a citizen applies for this scheme"
           />
         </div>
         <div className="field">

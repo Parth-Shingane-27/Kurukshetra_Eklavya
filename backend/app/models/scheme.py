@@ -64,6 +64,11 @@ class SchemeBase(BaseModel):
     conflict_group: str | None = None
     is_active: bool = True
     source_reference: str | None = None
+    application_link: str | None = None
+    """Official government registration/application form URL for this scheme — distinct from
+    `source_reference` (a general citation/source), this is specifically where a citizen goes
+    to apply. Curated manually for now (see plan.md FR-014/FR-015 for the eventual automated
+    freshness layer)."""
     rules: list[SchemeRule] = Field(default_factory=list)
     document_requirements: list[SchemeDocumentRequirement] = Field(default_factory=list)
 
@@ -85,6 +90,7 @@ class SchemeUpdate(BaseModel):
     conflict_group: str | None = None
     is_active: bool | None = None
     source_reference: str | None = None
+    application_link: str | None = None
     rules: list[SchemeRule] | None = None
     document_requirements: list[SchemeDocumentRequirement] | None = None
 

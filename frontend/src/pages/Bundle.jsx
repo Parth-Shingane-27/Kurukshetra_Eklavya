@@ -85,6 +85,13 @@ export default function Bundle() {
                 <div>
                   <strong>{s.name}</strong>
                   <div className="reasons">₹{s.benefit_value_estimate.toLocaleString()} · {s.category}</div>
+                  {s.application_link && (
+                    <div className="reasons">
+                      <a href={s.application_link} target="_blank" rel="noreferrer">
+                        Apply on the official portal ↗
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

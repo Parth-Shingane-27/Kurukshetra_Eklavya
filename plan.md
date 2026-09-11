@@ -209,6 +209,17 @@
 - Postconditions: Subsequent evaluations use updated rules
 - Failure/exception cases: Invalid rule syntax → validation error, entry rejected
 
+**FR-016 — Two-Step (Email + Password + OTP) Authentication [IMPLEMENTED]**
+- Actor: Citizen/Operator; Scheme Data Curator (Admin)
+- Preconditions: None for registration; a registered account for login
+- Inputs: Step 1 — email + password. Step 2 — the 6-digit code emailed after step 1 succeeds
+- Expected behavior: `POST /api/auth/register` creates an account (role `citizen` or `admin`; `admin` additionally requires the existing `ADMIN_CREDENTIAL` as a one-time bootstrap secret, per BR-016, so admin signup isn't self-service). `POST /api/auth/login` verifies email+password and emails a time-limited one-time code via Resend (falls back to a console-logged/`debug_otp` code if no `RESEND_API_KEY` is configured, or if Resend itself fails to send — see BR-017). `POST /api/auth/verify-otp` checks that code and issues a JWT access token
+- Outputs: A bearer JWT (role-carrying) plus the account's public profile (`UserOut`)
+- Postconditions: Subsequent requests carry `Authorization: Bearer <token>`; a citizen profile (`citizens` collection) created while authenticated is stamped with `owner_user_id` and becomes access-controlled (BR-018) — a profile created anonymously (no token presented) remains exactly as open as the original prototype behavior, so this is additive, not a breaking change to FR-001
+- Business rules: BR-016, BR-017, BR-018 (see Section 12)
+- Failure/exception cases: Wrong password → 401; unknown email → 401 (same message as wrong password, to avoid account enumeration); wrong/expired OTP → 401; more than `OTP_MAX_ATTEMPTS` wrong OTP submissions → the pending login is invalidated, forcing a fresh login; admin registration without the correct bootstrap credential → 403; duplicate email → 409
+- Backward compatibility: The original admin-only `X-Admin-Token` header (Section 20's prior prototype auth) is still accepted alongside a role=admin JWT on every admin-gated endpoint — a deliberate non-breaking migration, not a second, competing auth system
+
 **FR-012 — Multilingual Conversational & Voice Profile Intake [EXTENDED SCOPE]**
 - Actor: Citizen / Operator; supported by the Conversational/Voice Intake Assistant
 - Preconditions: None (alternative entry path to FR-001's structured form)
@@ -267,6 +278,7 @@
 | NFR-012 **[EXTENDED SCOPE]** | Accessibility | Conversational/voice intake (FR-012) must support English, Hindi, and Marathi for both text and speech input; speech recognition failure must degrade to text input, never block the citizen. |
 | NFR-013 **[EXTENDED SCOPE]** | Data Integrity / Safety | No content retrieved by the RAG layer (FR-015) may reach the live scheme knowledge base without an explicit curator approval action — this is enforced at the data-write layer (a separate pending-review collection, not a flag on the live record), not only by UI convention. |
 | NFR-014 **[EXTENDED SCOPE]** | Reliability | RAG refresh failures (source unreachable, retrieval inconclusive) must never block or degrade FR-004/FR-005/FR-006 — those depend only on the already-committed knowledge base, exactly as NFR-003 already requires for the LLM Explanation Service. |
+| NFR-015 **[IMPLEMENTED]** | Reliability | The OTP-delivery service (Resend) failing or being unreachable must never block login (FR-016) — the two-step flow degrades to a console-logged/`debug_otp` fallback exactly as NFR-003 requires for the LLM Explanation Service, rather than surfacing a 500 to the caller. |
 
 ---
 
@@ -729,6 +741,33 @@ UNTIL a Scheme Data Curator explicitly approves the candidate via the existing F
 SO THAT no citizen-facing eligibility decision can ever be influenced by unreviewed retrieved content
 ```
 
+**BR-016 — Admin self-registration requires the bootstrap credential [IMPLEMENTED]**
+```text
+WHEN a new account is registered with role = admin (FR-016)
+THE request SHALL include the current ADMIN_CREDENTIAL as `admin_bootstrap_credential`
+AND registration SHALL be rejected (403) if it is missing or incorrect
+SO THAT admin accounts cannot be created by an arbitrary, unauthenticated caller
+```
+
+**BR-017 — OTP verification is rate-limited and single-use [IMPLEMENTED]**
+```text
+WHEN a citizen or curator submits a code to POST /api/auth/verify-otp
+THE code SHALL be checked against a hashed, time-limited (OTP_EXPIRE_SECONDS) pending-login record
+AND a wrong code SHALL increment an attempt counter on that same pending login
+AND the pending login SHALL be invalidated after OTP_MAX_ATTEMPTS wrong attempts, or after a single correct verification
+SO THAT a leaked/guessed code has a bounded window and a bounded number of guesses, not unlimited retries
+```
+
+**BR-018 — Citizen profile ownership is additive, never a regression on the existing open flow [IMPLEMENTED]**
+```text
+WHEN a citizen profile (FR-001) is created while the caller presents a valid JWT
+THE profile SHALL be stamped with that caller's user id as `owner_user_id`
+AND SHALL thereafter be readable/writable only by that owner or by an admin (403 otherwise)
+WHEN a citizen profile is created with no caller token (the original, still-supported flow)
+THE profile SHALL have no `owner_user_id` and SHALL remain exactly as openly accessible as before this feature existed
+SO THAT introducing real accounts protects citizens who choose to use them without breaking the anonymous/assisted-service flow FR-001 always supported
+```
+
 ---
 
 ## 13. Data Model
@@ -737,9 +776,23 @@ Database is MongoDB (document store). Modeling approach: entities that are alway
 
 **Collection: citizens**
 - Purpose: Represents the person whose profile is evaluated.
-- Fields: `_id`, name, date_of_birth, gender, annual_income, occupation, state, district, social_category, disability_status, land_holding_acres, family_size, marital_status, bpl_status, education_level, employment_status, `documents` (embedded array, see CitizenDocument below), created_at, updated_at
+- Fields: `_id`, name, date_of_birth, gender, annual_income, occupation, state, district, social_category, disability_status, land_holding_acres, family_size, marital_status, bpl_status, education_level, employment_status, `owner_user_id` (nullable, **[IMPLEMENTED]** — see BR-018), `documents` (embedded array, see CitizenDocument below), created_at, updated_at
 - Required: name, date_of_birth, state, district
 - Optional: land_holding_acres, disability_status (absent field is treated as missing input, so scheme rule evaluation reports "indeterminate" for rules needing it)
+- `owner_user_id` **[IMPLEMENTED]**: null for a profile created anonymously (original behavior, still fully supported); set to the creating user's id when created while authenticated (FR-016/BR-018) — enforced at the API layer (`check_owner_or_public`), not by a database-level access rule.
+
+**Collection: users [IMPLEMENTED]**
+- Purpose: A real login account (FR-016) — citizen or admin.
+- Fields: `_id`, email (unique, lowercased), password_hash (bcrypt), role (`citizen`/`admin`), citizen_id (nullable — not currently auto-linked; a user may own zero or more citizen profiles via each profile's own `owner_user_id` rather than a single fixed link), created_at
+- Required: email, password_hash, role
+- Indexing: unique index on `email`.
+
+**Collection: pending_logins [IMPLEMENTED]**
+- Purpose: The short-lived, single-use second-factor state between login step 1 (password) and step 2 (OTP), per FR-016/BR-017.
+- Fields: `_id`, pending_token (opaque, unique), user_id (ref → users), code_hash (SHA-256 of the 6-digit OTP — not bcrypt, since it's a short-lived, single-use, rate-limited code, not a long-lived credential), attempts, created_at, expires_at
+- Required: all fields
+- Indexing: unique index on `pending_token`; TTL index on `expires_at` (`expireAfterSeconds: 0`) so MongoDB itself garbage-collects expired pending logins with no application-level cleanup job needed.
+- Rationale for a separate collection rather than embedding on `users`: a user may have multiple concurrent login attempts (e.g. two devices), and the TTL auto-expiry only makes sense on a short-lived record, not the user's own permanent document.
 
 **Embedded sub-document: CitizenDocument** (array field `documents` on the citizen document)
 - Purpose: Records documents the citizen already holds.
@@ -749,8 +802,9 @@ Database is MongoDB (document store). Modeling approach: entities that are alway
 
 **Collection: schemes**
 - Purpose: A government scheme available for evaluation.
-- Fields: `_id`, name, description, issuing_authority, category, benefit_type, benefit_value_estimate, conflict_group (nullable), is_active (boolean), source_reference, `rules` (embedded array, see SchemeRule below), `document_requirements` (embedded array, see SchemeDocumentRequirement below), created_at, updated_at
+- Fields: `_id`, name, description, issuing_authority, category, benefit_type, benefit_value_estimate, conflict_group (nullable), is_active (boolean), source_reference, application_link (nullable, **[IMPLEMENTED]**), `rules` (embedded array, see SchemeRule below), `document_requirements` (embedded array, see SchemeDocumentRequirement below), created_at, updated_at
 - Required: name, category, benefit_type, benefit_value_estimate, is_active
+- `application_link` **[IMPLEMENTED]**: the official government registration/application form URL for this scheme, distinct from `source_reference` (a general citation). Curated manually via the Admin scheme form today; surfaced to citizens on both the Eligible Schemes screen (for eligible results) and the Bundle screen (for included schemes). Not yet populated for the original 8 seeded schemes.
 
 **Embedded sub-document: SchemeRule** (array field `rules` on the scheme document)
 - Purpose: One eligibility condition belonging to a scheme.
@@ -887,21 +941,25 @@ Output: Consolidated application checklist
 
 | Method | Endpoint | Purpose | Auth | Authorization |
 |---|---|---|---|---|
-| POST | /api/citizens | Create citizen profile | None/basic (see Q-002) | Owner-create |
-| GET | /api/citizens/:id | Retrieve a citizen profile | Basic | Owner or Admin |
-| PUT | /api/citizens/:id | Update a citizen profile | Basic | Owner or Admin |
-| POST | /api/citizens/:id/documents | Declare held documents | Basic | Owner or Admin |
+| POST | /api/auth/register **[IMPLEMENTED]** | Create a citizen or admin account (FR-016) | None | Public write; admin role requires `admin_bootstrap_credential` (BR-016) |
+| POST | /api/auth/login **[IMPLEMENTED]** | Step 1: verify email+password, email an OTP (FR-016) | None | Public write |
+| POST | /api/auth/verify-otp **[IMPLEMENTED]** | Step 2: verify the OTP, issue a JWT (FR-016, BR-017) | None (pending_token is the credential) | Public write |
+| GET | /api/auth/me **[IMPLEMENTED]** | Retrieve the authenticated account's own profile | Bearer JWT | Self only |
+| POST | /api/citizens | Create citizen profile | None/basic (JWT optional — Q-002 resolved for the citizen-owner case, see BR-018) | Owner-create; stamped with `owner_user_id` only if authenticated |
+| GET | /api/citizens/:id | Retrieve a citizen profile | Basic (JWT if the profile is owned) | Owner or Admin (unauthenticated/legacy profiles remain public, BR-018) |
+| PUT | /api/citizens/:id | Update a citizen profile | Basic (JWT if the profile is owned) | Owner or Admin (BR-018) |
+| POST | /api/citizens/:id/documents | Declare held documents | Basic (JWT if the profile is owned) | Owner or Admin (BR-018) |
 | GET | /api/schemes | List active schemes | None | Public read |
 | GET | /api/schemes/:id | Get one scheme's detail | None | Public read |
-| POST | /api/schemes | Create a scheme (admin) | Admin credential | Admin only |
-| PUT | /api/schemes/:id | Update/deactivate a scheme | Admin credential | Admin only |
-| POST | /api/eligibility/evaluate | Run eligibility evaluation for a citizen | Basic | Owner or Admin |
-| POST | /api/conflicts/detect | Run conflict detection for a citizen's eligible set | Basic | Owner or Admin |
-| POST | /api/bundle/optimize | Compute optimized bundle for a citizen | Basic | Owner or Admin |
-| GET | /api/bundle/:id | Retrieve a computed bundle | Basic | Owner or Admin |
-| POST | /api/checklist/generate | Generate checklist for a bundle | Basic | Owner or Admin |
-| GET | /api/checklist/:bundleId | Retrieve a checklist | Basic | Owner or Admin |
-| GET | /api/agent/trace/:citizenId | Retrieve reasoning trace | Basic | Owner or Admin |
+| POST | /api/schemes | Create a scheme (admin) | Admin credential (legacy `X-Admin-Token` **or** role=admin JWT, per FR-016) | Admin only |
+| PUT | /api/schemes/:id | Update/deactivate a scheme | Admin credential (legacy `X-Admin-Token` **or** role=admin JWT) | Admin only |
+| POST | /api/eligibility/evaluate | Run eligibility evaluation for a citizen | Basic (JWT if the profile is owned) | Owner or Admin (BR-018) |
+| POST | /api/conflicts/detect | Run conflict detection for a citizen's eligible set | Basic (JWT if the profile is owned) | Owner or Admin (BR-018) |
+| POST | /api/bundle/optimize | Compute optimized bundle for a citizen | Basic (JWT if the profile is owned) | Owner or Admin (BR-018) |
+| GET | /api/bundle/:id | Retrieve a computed bundle | Basic (JWT if the underlying profile is owned) | Owner or Admin (BR-018) |
+| POST | /api/checklist/generate | Generate checklist for a bundle | Basic (JWT if the underlying profile is owned) | Owner or Admin (BR-018) |
+| GET | /api/checklist/:bundleId | Retrieve a checklist | Basic (JWT if the underlying profile is owned) | Owner or Admin (BR-018) |
+| GET | /api/agent/trace/:citizenId | Retrieve reasoning trace | Basic (JWT if the profile is owned) | Owner or Admin (BR-018) |
 | POST | /api/intake/converse **[EXTENDED SCOPE]** | Submit one turn of conversational/voice intake (transcript + optional target language); returns extracted slot(s), an assistant follow-up prompt, and profile-completeness state (FR-012) | Basic | Owner or Admin |
 | POST | /api/quick-check **[EXTENDED SCOPE]** | Stateless quick eligibility check against caller-supplied criteria; no citizen record created (FR-013, BR-014) | None | Public write (rate-limited, see Section 20) |
 | GET | /api/catalog/schemes **[EXTENDED SCOPE]** | Browse/search the scheme catalog with form-filling guide metadata attached per scheme (FR-014) | None | Public read |
@@ -1093,7 +1151,7 @@ Output: Consolidated application checklist
 | Rule representation | JSON-shaped rule documents embedded in each scheme document (SchemeRule) | Data-driven per NFR-005; avoids hardcoding eligibility logic in application code; natively a JSON document in MongoDB, no ORM mapping layer needed |
 | Optimization | Custom constrained-selection algorithm in Python (exact for small N via DP/backtracking over the conflict graph; falls back to greedy for larger N) | Problem size (dozens–hundreds of schemes per citizen) is small enough for an exact or near-exact solution without a heavyweight solver dependency |
 | AI/ML | Google Gemini API — explanation generation only (originally scoped as Anthropic Claude API "or equivalent"; Gemini selected during implementation, Section 16's pluggable-service design applies unchanged) | Matches the "agentic"/AI requirement without placing eligibility logic in a non-deterministic component |
-| Authentication | Minimal token/credential scheme for Admin; citizen identified by generated ID for prototype | Matches actual scope; see Q-002 for production auth |
+| Authentication **[IMPLEMENTED]** | Real accounts: `bcrypt` password hashing, `PyJWT` bearer tokens, Resend (HTTP API) for OTP email delivery (FR-016) — the original minimal admin-token scheme (Q-002's prototype default) is still accepted alongside it for backward compatibility | Q-002 is now resolved for both roles; bcrypt/PyJWT chosen over `passlib`/`python-jose` since both are pure-Python-adjacent with prebuilt wheels (no Rust/C toolchain needed on Windows, avoiding the pydantic-core wheel-build issue hit earlier in this project) |
 | Testing | Pytest (backend unit/integration), Playwright or Cypress (UI E2E) | Standard, well-supported tools with fast setup |
 | Deployment | Single-container deployment (e.g., one backend container + static frontend build) to a simple host | No justification for multi-service infra at this scale |
 | **[EXTENDED SCOPE]** Speech-to-text | Browser Web Speech API (client-side) for voice intake, falling back to typed text input | No server-side audio pipeline needed at this scale; keeps FR-012 client-only for capture, matching how the frontend already owns all other input capture |
@@ -1153,12 +1211,12 @@ Kurukshetra_2.0/
 
 ## 20. Security Plan
 
-- **Authentication:** Prototype uses a lightweight scheme (citizen ID token issued on profile creation; separate admin credential). See Q-002 for production-grade requirements.
-- **Authorization:** Enforce owner-or-admin checks on all citizen-scoped endpoints (GET/PUT /api/citizens/:id, evaluate, optimize, checklist).
+- **Authentication [IMPLEMENTED]:** Real two-step accounts (FR-016) — email+password (bcrypt) verified first, then a 6-digit OTP emailed via Resend (console/`debug_otp` fallback if unconfigured or unreachable, NFR-015) must be verified before a JWT is issued. The original single shared admin credential (`X-Admin-Token`) is still accepted alongside a role=admin JWT for backward compatibility. Q-002 is resolved.
+- **Authorization [IMPLEMENTED]:** Owner-or-admin checks are enforced on every citizen-scoped endpoint (GET/PUT/documents on /api/citizens/:id, eligibility/evaluate, conflicts/detect, bundle/optimize, GET /api/bundle/:id, checklist/generate, GET /api/checklist/:bundleId, agent/run, GET /api/agent/trace/:citizenId) via `check_owner_or_public` — but **only for profiles created while authenticated** (`owner_user_id` set). A profile created anonymously (no token presented — the original FR-001 flow) remains exactly as openly accessible as it always was; this is a deliberate, additive migration, not a breaking change (BR-018).
 - **Input validation:** Server-side validation on every write endpoint (types, ranges, required fields) in addition to UI-side validation.
 - **API security:** All endpoints served over HTTPS in any hosted deployment; admin endpoints require the admin credential header/token.
 - **Data protection:** Citizen PII (income, category, disability status) stored in the database only; not logged in plaintext in audit logs beyond what's needed for the reasoning trace, and audit logs are access-controlled the same as the citizen record.
-- **Secrets management:** LLM API key and admin credential stored via environment variables (`.env`, excluded from version control) — never hardcoded.
+- **Secrets management:** LLM API key, admin credential, JWT signing secret, and Resend API key all stored via environment variables (`.env`, excluded from version control) — never hardcoded. `.env.example` (now present) documents every required key as a blank/placeholder template.
 - **Rate limiting:** Basic per-IP rate limiting on public/write endpoints to prevent abuse (justified even for a prototype since /api/citizens is a public write endpoint).
 - **File upload security:** Not applicable — current scope records document *names/types held* only, no file uploads.
 - **Injection prevention:** Use the MongoDB driver/ODM's parameterized query builders exclusively (e.g., Motor/PyMongo with typed filter dicts); never build query documents from unsanitized user input (guards against NoSQL/operator injection, e.g., a request field containing `$where` or `$gt`), and never string-concatenate into queries, including for the rule sub-documents.
@@ -1203,6 +1261,8 @@ Kurukshetra_2.0/
 - **UI tests:** Form validation, results rendering, empty/error/loading states per [[Section 17]].
 - **End-to-end tests:** The full demo journey (profile → eligible → conflicts → bundle → explanation → checklist) against a seeded sample citizen and sample scheme set.
 - **Security tests:** Authorization checks (citizen A cannot read citizen B's profile), input validation/injection attempts on rule fields.
+- **[IMPLEMENTED] Two-step authentication tests:** registration (citizen + admin, duplicate-email rejection, admin bootstrap-credential enforcement per BR-016), login (wrong password/unknown email → 401), OTP verification (wrong code, expiry, lockout after `OTP_MAX_ATTEMPTS` per BR-017), full register→login→verify→`/me` round trip, and — critically — that the legacy `X-Admin-Token` header still works unmodified alongside the new JWT path (backward-compatibility regression test).
+- **[IMPLEMENTED] Ownership enforcement tests:** an anonymously-created citizen's full pipeline (eligibility → conflicts → bundle → checklist → trace) stays reachable with zero auth, exactly as before this feature (regression guard); a profile created while authenticated rejects a stranger and an unauthenticated caller (403) at every one of those same stages, including the two routes (checklist generate/get) that only carry a `bundle_id`, not a `citizen_id`; an admin can access any owned profile regardless of who created it.
 - **AI/ML evaluation:** Explanation Generator tested for (a) fallback correctness when LLM is unreachable (mocked failure), (b) that explanation text never asserts an eligibility/conflict fact contradicting the structured input (spot-check assertions on generated text against source facts).
 - **[EXTENDED SCOPE] Conversational/voice intake tests:** slot extraction on mocked LLM responses (success + malformed-output cases), validation rejection of an extracted-but-invalid value (BR-013), fallback-to-structured-question path when the LLM is unreachable.
 - **[EXTENDED SCOPE] Quick Checker tests:** correct likely-eligible list on known criteria, no `citizens` document created or `eligibility_results`/`bundles` row written for any call (BR-014), validation rejection on bad criteria.
@@ -1226,6 +1286,7 @@ FR-012 [EXTENDED SCOPE] → TC-024 (slot extracted and validated), TC-025 (inval
 FR-013 [EXTENDED SCOPE] → TC-027 (likely-eligible list on known criteria), TC-028 (no citizen/eligibility/bundle record created per BR-014), TC-029 (invalid criteria rejected)
 FR-014 [EXTENDED SCOPE] → TC-030 (catalog search/filter), TC-031 (guide retrieval), TC-032 (unknown scheme 404)
 FR-015 [EXTENDED SCOPE] → TC-033 (candidate written to rag_candidate_updates only, per BR-015), TC-034 (approve/reject status transitions), TC-035 (structural test: no core-engine code path reads rag_candidate_updates), TC-036 (unreachable source produces no candidate and does not affect the core pipeline, per NFR-014)
+FR-016 [IMPLEMENTED] → TC-037 (account registration), TC-038 (duplicate email rejected), TC-039 (admin bootstrap credential enforced, BR-016), TC-040 (wrong password/unknown email rejected), TC-041 (full two-step login issues a working JWT), TC-042 (wrong OTP rejected), TC-043 (OTP lockout after max attempts, BR-017), TC-044 (legacy X-Admin-Token still works alongside JWT), TC-045 (anonymous citizen pipeline stays fully open — regression guard), TC-046 (owned citizen pipeline: stranger/anonymous 403, owner/admin 200, across eligibility/conflicts/bundle/checklist/trace, BR-018)
 ```
 
 ---
@@ -1585,7 +1646,7 @@ A-011 [EXTENDED SCOPE]: The Maharashtra/MahaDBT-aligned six-scheme representativ
 ```text
 Q-001: What is the actual source and scope of the scheme knowledge base for the demo — should the team curate real scheme data (e.g., a handful of well-known central/state schemes) or is a fictional/simplified sample set acceptable? (Affects Section 13 seed data and demo credibility.)
 
-Q-002: Is any authentication required at all for the hackathon demo, or is the minimal citizen-ID/admin-credential approach in Section 20 sufficient? A production deployment would need real citizen identity verification (e.g., government ID integration), which is explicitly out of scope here.
+Q-002 (resolved) [IMPLEMENTED]: Real two-step (email+password+OTP) authentication was implemented for both citizens and admins (FR-016), going beyond the minimal citizen-ID/admin-credential approach originally scoped here — see Section 20. Full government-ID identity verification (Aadhaar/DigiLocker) remains explicitly out of scope/deferred (Section 30a).
 
 Q-003: Should partially-complete citizen profiles be saveable as drafts, or must a profile be fully valid before it is persisted? Section 8 (UC-01) assumes drafts are not required unless stated otherwise.
 
@@ -1625,13 +1686,15 @@ Q-010 [EXTENDED SCOPE]: What embedding/vector-store provider should the RAG Retr
 | FR-013 [EXTENDED SCOPE] | UC-10 | Quick Checker | POST /api/quick-check | (none persisted — BR-014) | TC-027, TC-028, TC-029 |
 | FR-014 [EXTENDED SCOPE] | UC-11 | Scheme Catalog | GET /api/catalog/schemes, GET /api/catalog/schemes/:id/guide | Scheme | TC-030, TC-031, TC-032 |
 | FR-015 [EXTENDED SCOPE] | UC-12 | RAG Retrieval Layer | GET/POST /api/admin/rag-candidates... | rag_candidate_updates | TC-033, TC-034, TC-035, TC-036 |
+| FR-016 [IMPLEMENTED] | — (cross-cutting, all citizen-scoped UCs) | Two-Step Authentication | POST /api/auth/register, /login, /verify-otp, GET /api/auth/me | users, pending_logins | TC-037–TC-046 (see Section 22) |
 
 ---
 
 ## 33. Implementation Status
 
 ```text
-Overall Status: In Progress (Phases 0–7 complete, Phase 8 in progress; Phases 9–11
+Overall Status: In Progress (Phases 0–7 complete, Phase 8 in progress, Two-Step Authentication &
+Ownership Protection complete [IMPLEMENTED, outside original phase numbering]; Phases 9–11
 [EXTENDED SCOPE] specified but not started — see Pending below)
 
 Completed:
@@ -1807,6 +1870,33 @@ In Progress:
 
   Remaining for this phase: execute the full documented dry-run (all 3 profiles, screen by
   screen) as a final sign-off pass, per the "Full dry-run of the demo script" task.
+
+- **Two-Step Authentication & Ownership Protection [IMPLEMENTED]** — added outside the original
+  Phase 0–11 numbering, in response to a direct request rather than the phased plan (FR-016,
+  BR-016/017/018, NFR-015). `app/modules/auth/service.py` implements register → login (bcrypt
+  password check) → email OTP (Resend HTTP API, `app/core/email_sender.py`) → JWT
+  (`app/core/security.py`); `app/core/auth.py`'s `require_admin` now accepts a role=admin JWT
+  **or** the original `X-Admin-Token` header (verified via a dedicated backward-compatibility
+  test, not just by inspection); a new `check_owner_or_public` dependency extends real ownership
+  protection from `citizens.py` to every citizen-scoped endpoint (eligibility, conflicts,
+  bundle — including its bundle_id-only GET route — checklist, agent), resolved through a new
+  `citizen_id_for_bundle` helper for the two routes that only carry a `bundle_id`. A profile
+  created anonymously (no token) is unaffected — it stays exactly as open as the original
+  prototype behavior; only a profile created while authenticated gets `owner_user_id` and real
+  protection, confirmed by a dedicated backward-compatibility test alongside the new
+  owner/stranger/admin enforcement tests. Also added: `application_link` on the Scheme model
+  (Admin-curated registration/application-form URL), now surfaced on the Eligible Schemes and
+  Bundle screens, not just Admin. 18 new backend tests (117 total): `test_auth.py` (13),
+  `test_ownership_enforcement.py` (3), plus one each in `test_admin_schemes.py`
+  (application_link) and elsewhere. Live-verified end-to-end against the real MongoDB Atlas
+  cluster and a real Resend send (to the Resend account's own verified address — sending to an
+  arbitrary citizen's email requires the account owner to verify a domain on Resend's side,
+  which is an account-configuration step, not a code gap; the send path itself is already
+  generic and targets whatever email the caller provides). One real bug found and fixed along
+  the way: `send_otp_email` originally let a Resend-side failure (e.g. an unverified recipient)
+  raise all the way up into a 500 on `/api/auth/login` instead of degrading to the console/
+  `debug_otp` fallback — fixed to catch `httpx.HTTPError` and fall back gracefully, matching
+  BR-010's established "external service failure never blocks the pipeline" pattern (NFR-015).
 
 Pending:
 - **[EXTENDED SCOPE] Phase 9 (Quick Checker & Scheme Catalog), Phase 10 (Conversational/Voice

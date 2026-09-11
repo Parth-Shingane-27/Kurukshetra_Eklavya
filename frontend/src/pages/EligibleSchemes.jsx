@@ -72,6 +72,13 @@ export default function EligibleSchemes() {
                       </ul>
                     </div>
                   )}
+                  {r.status === "eligible" && r.application_link && (
+                    <div className="reasons">
+                      <a href={r.application_link} target="_blank" rel="noreferrer">
+                        Apply on the official portal ↗
+                      </a>
+                    </div>
+                  )}
                 </div>
                 <StatusBadge status={r.status} />
               </div>

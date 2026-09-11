@@ -20,6 +20,7 @@ class EligibilityResultOut(BaseModel):
     scheme_name: str
     status: EligibilityStatus
     reasons: list[EligibilityReason]
+    application_link: str | None = None
 
 
 class EvaluateResponse(BaseModel):

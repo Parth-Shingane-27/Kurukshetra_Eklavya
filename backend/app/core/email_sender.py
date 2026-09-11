@@ -19,27 +19,42 @@ RESEND_API_URL = "https://api.resend.com/emails"
 
 
 async def send_otp_email(*, to_email: str, code: str) -> bool:
-    """Returns True if sent via Resend, False if it fell back to console logging."""
+    """Returns True if sent via Resend, False if it fell back to console logging.
+
+    A Resend failure (bad/unverified sender, rate limit, network error, etc.) must never crash
+    login itself — the OTP flow is the second factor, not Resend's own health check — so any
+    failure here degrades to the same console/`debug_otp` fallback as a missing API key,
+    matching BR-010's "external service failure never blocks the pipeline" pattern elsewhere
+    in this codebase.
+    """
     settings = get_settings()
     if not settings.resend_api_key:
         logger.warning("RESEND_API_KEY not set — OTP for %s is %s (console fallback)", to_email, code)
         return False
 
-    async with httpx.AsyncClient(timeout=10.0) as http_client:
-        response = await http_client.post(
-            RESEND_API_URL,
-            headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-            json={
-                "from": settings.resend_from_email,
-                "to": [to_email],
-                "subject": "Your ASBO verification code",
-                "html": (
-                    f"<p>Your ASBO login verification code is:</p>"
-                    f"<p style='font-size:24px;font-weight:bold;letter-spacing:4px'>{code}</p>"
-                    f"<p>This code expires in {settings.otp_expire_seconds // 60} minutes. "
-                    f"If you did not request this, you can ignore this email.</p>"
-                ),
-            },
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as http_client:
+            response = await http_client.post(
+                RESEND_API_URL,
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                json={
+                    "from": settings.resend_from_email,
+                    "to": [to_email],
+                    "subject": "Your ASBO verification code",
+                    "html": (
+                        f"<p>Your ASBO login verification code is:</p>"
+                        f"<p style='font-size:24px;font-weight:bold;letter-spacing:4px'>{code}</p>"
+                        f"<p>This code expires in {settings.otp_expire_seconds // 60} minutes. "
+                        f"If you did not request this, you can ignore this email.</p>"
+                    ),
+                },
+            )
+            response.raise_for_status()
+        return True
+    except httpx.HTTPError as exc:
+        detail = getattr(exc, "response", None)
+        body = detail.text if detail is not None else str(exc)
+        logger.warning(
+            "Resend send failed for %s (%s) — OTP is %s (console fallback)", to_email, body, code
         )
-        response.raise_for_status()
-    return True
+        return False

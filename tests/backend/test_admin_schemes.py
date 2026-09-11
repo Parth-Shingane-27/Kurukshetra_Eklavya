@@ -95,6 +95,29 @@ async def test_update_scheme_not_found(client):
     assert res.status_code == 404
 
 
+async def test_scheme_application_link_surfaces_in_eligibility_results(client):
+    scheme = {**VALID_SCHEME, "application_link": "https://example.gov.in/apply/widow-pension"}
+    await client.post("/api/schemes", json=scheme, headers=ADMIN_HEADERS)
+
+    citizen_res = await client.post(
+        "/api/citizens",
+        json={
+            "name": "Link Test",
+            "date_of_birth": "1970-01-01",
+            "state": "Bihar",
+            "district": "Patna",
+            "marital_status": "widowed",
+        },
+    )
+    citizen_id = citizen_res.json()["id"]
+
+    eval_res = await client.post("/api/eligibility/evaluate", json={"citizen_id": citizen_id})
+    assert eval_res.status_code == 200
+    result = next(r for r in eval_res.json()["results"] if r["scheme_name"] == "Test Widow Pension Scheme")
+    assert result["status"] == "eligible"
+    assert result["application_link"] == "https://example.gov.in/apply/widow-pension"
+
+
 async def test_admin_created_scheme_affects_subsequent_evaluation(client, db):
     """Phase 7 completion criteria: 'Curator can add a new scheme through the UI and see it
     affect subsequent evaluations' — without redeploying code (NFR-005)."""

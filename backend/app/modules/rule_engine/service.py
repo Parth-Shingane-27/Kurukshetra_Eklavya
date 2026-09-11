@@ -29,6 +29,7 @@ async def evaluate_eligibility(db: AsyncIOMotorDatabase, citizen_id: str) -> dic
                 "scheme_name": scheme["name"],
                 "status": outcome["status"],
                 "reasons": outcome["reasons"],
+                "application_link": scheme.get("application_link"),
             }
         )
         docs_to_insert.append(
