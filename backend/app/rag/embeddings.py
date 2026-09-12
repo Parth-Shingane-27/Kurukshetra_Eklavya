@@ -4,10 +4,21 @@ can substitute a deterministic fake embedding function, the same pattern
 `explanation/llm_client.py` uses for `call_gemini`.
 """
 
+import asyncio
+import logging
+
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 
+logger = logging.getLogger(__name__)
+
 EMBEDDING_BATCH_SIZE = 50
+MAX_RETRIES_PER_BATCH = 5
+INTER_BATCH_DELAY_SECONDS = 1.0
+"""A deliberate pause between successful batches — the free tier's embedContent quota is
+per-minute (observed: 100 requests/min), not per-day, so a full-corpus ingestion (hundreds of
+batches) only needs to not burst faster than that, not stop entirely."""
 
 
 class EmbeddingError(RuntimeError):
@@ -36,19 +47,39 @@ async def embed_texts(
 
     client = genai.Client(api_key=api_key)
     vectors: list[list[float]] = []
-    for start in range(0, len(texts), batch_size):
+    num_batches = (len(texts) + batch_size - 1) // batch_size
+    for batch_index, start in enumerate(range(0, len(texts), batch_size)):
         batch = texts[start : start + batch_size]
-        try:
-            response = await client.aio.models.embed_content(
-                model=model,
-                contents=batch,
-                config=types.EmbedContentConfig(task_type=task_type),
-            )
-        except Exception as exc:  # pragma: no cover - network/SDK failure path
-            raise EmbeddingError(f"Gemini embedding call failed: {exc}") from exc
+        response = None
+        for attempt in range(1, MAX_RETRIES_PER_BATCH + 1):
+            try:
+                response = await client.aio.models.embed_content(
+                    model=model,
+                    contents=batch,
+                    config=types.EmbedContentConfig(task_type=task_type),
+                )
+                break
+            except genai_errors.ClientError as exc:
+                is_rate_limit = getattr(exc, "code", None) == 429
+                if not is_rate_limit or attempt == MAX_RETRIES_PER_BATCH:
+                    raise EmbeddingError(f"Gemini embedding call failed: {exc}") from exc
+                # The free tier's embedContent quota is per-minute, not per-day (unlike
+                # generateContent's daily cap) — a short backoff and retry is the correct
+                # response, not treating this as a hard failure.
+                backoff_seconds = min(60, 10 * attempt)
+                logger.warning(
+                    "Embedding batch %d/%d rate-limited (attempt %d/%d) — retrying in %ds",
+                    batch_index + 1, num_batches, attempt, MAX_RETRIES_PER_BATCH, backoff_seconds,
+                )
+                await asyncio.sleep(backoff_seconds)
+            except Exception as exc:  # pragma: no cover - network/SDK failure path
+                raise EmbeddingError(f"Gemini embedding call failed: {exc}") from exc
         if not response.embeddings or len(response.embeddings) != len(batch):
             raise EmbeddingError("Gemini embedding response did not match the requested batch size")
         vectors.extend(list(e.values) for e in response.embeddings)
+        logger.info("Embedded batch %d/%d (%d texts)", batch_index + 1, num_batches, len(batch))
+        if batch_index + 1 < num_batches:
+            await asyncio.sleep(INTER_BATCH_DELAY_SECONDS)
     return vectors
 
 

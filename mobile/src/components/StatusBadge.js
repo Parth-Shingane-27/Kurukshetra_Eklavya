@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from "react-native";
-import { badgeColors, badgeLabels, radius } from "../theme";
+import { badgeColors, badgeLabels, colors as themeColors, radius } from "../theme";
 
 export default function StatusBadge({ status }) {
-  const colors = badgeColors[status] || { fg: "#5b6270", bg: "#eef0f3" };
+  const colors = badgeColors[status] || { fg: themeColors.textMuted, bg: themeColors.neutralBg };
   return (
     <View style={[styles.badge, { backgroundColor: colors.bg }]}>
       <Text style={[styles.text, { color: colors.fg }]}>{badgeLabels[status] || status}</Text>

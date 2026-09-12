@@ -13,11 +13,7 @@ async def _login(client, email, role="citizen"):
         payload.update(ADMIN_BOOTSTRAP)
     await client.post("/api/auth/register", json=payload)
     login_res = await client.post("/api/auth/login", json={"email": email, "password": "s3cret-pass"})
-    body = login_res.json()
-    verify_res = await client.post(
-        "/api/auth/verify-otp", json={"pending_token": body["pending_token"], "code": body["debug_otp"]}
-    )
-    return verify_res.json()
+    return login_res.json()
 
 
 async def _make_owned_citizen(client, auth_headers):

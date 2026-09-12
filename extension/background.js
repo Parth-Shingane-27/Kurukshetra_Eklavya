@@ -42,5 +42,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true; // keep the message channel open for the async chrome.tabs.query callback
   }
+  if (message?.type === "CAPTURE_REGION" && sender.tab) {
+    (async () => {
+      try {
+        // Captures only the current viewport (never the full scrollable page — there is no
+        // API for that, and it wouldn't match Section 8's "capture only the selected region"
+        // requirement anyway), then crops to exactly the rectangle the user drew.
+        const dataUrl = await chrome.tabs.captureVisibleTab(sender.tab.windowId, { format: "png" });
+        const croppedBase64 = await cropDataUrl(dataUrl, message.rect, message.devicePixelRatio || 1);
+        sendResponse({ ok: true, croppedBase64 });
+      } catch (err) {
+        sendResponse({ ok: false, error: String(err) });
+      }
+    })();
+    return true;
+  }
   return false;
 });
+
+async function cropDataUrl(dataUrl, rect, dpr) {
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+  const bitmap = await createImageBitmap(blob);
+
+  const sx = Math.max(0, Math.round(rect.x * dpr));
+  const sy = Math.max(0, Math.round(rect.y * dpr));
+  const sw = Math.max(1, Math.round(rect.width * dpr));
+  const sh = Math.max(1, Math.round(rect.height * dpr));
+
+  const canvas = new OffscreenCanvas(sw, sh);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sw, sh);
+  const croppedBlob = await canvas.convertToBlob({ type: "image/png" });
+  const buffer = await croppedBlob.arrayBuffer();
+
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}

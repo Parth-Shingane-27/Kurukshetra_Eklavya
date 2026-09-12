@@ -41,3 +41,9 @@ def upsert_chunks(
 
 def count(collection: Collection) -> int:
     return collection.count()
+
+
+def existing_ids(collection: Collection) -> set[str]:
+    """All chunk_ids already indexed — lets ingestion skip re-embedding (and re-spending
+    embedding-API quota on) chunks a prior, quota-interrupted run already persisted."""
+    return set(collection.get(include=[])["ids"])

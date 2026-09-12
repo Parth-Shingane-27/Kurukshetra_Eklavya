@@ -1,7 +1,7 @@
 """Authentication dependencies.
 
 FR-016 replaces the original prototype's single shared admin secret with real per-user
-email+password+OTP accounts (see app/modules/auth). `require_admin` still accepts the legacy
+email+password accounts (see app/modules/auth). `require_admin` still accepts the legacy
 `X-Admin-Token` header alongside a role=admin JWT — kept for backward compatibility with the
 existing admin-token test suite and any deployment mid-migration; new admin sessions should use
 the login flow. There was never a citizen-facing auth mechanism before (Q-002 was open); the new

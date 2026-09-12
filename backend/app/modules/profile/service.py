@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.models.citizen import CitizenCreate, CitizenDocument, CitizenUpdate
+from app.modules.auth.service import link_citizen_to_user
 
 
 def _to_object_id(citizen_id: str) -> ObjectId:
@@ -30,6 +31,10 @@ async def create_citizen(
     doc["created_at"] = now
     doc["updated_at"] = now
     result = await db.citizens.insert_one(doc)
+    if owner_user_id is not None:
+        # So a subsequent login immediately routes this account to its own dashboard (FR-016),
+        # rather than relying on the login-time fallback lookup in app.modules.auth.service.
+        await link_citizen_to_user(db, owner_user_id, str(result.inserted_id))
     created = await db.citizens.find_one({"_id": result.inserted_id})
     return _serialize(created)
 

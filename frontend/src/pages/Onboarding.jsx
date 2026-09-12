@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createCitizen, listSchemes } from "../api/client";
 import { SelectField, TextField } from "../components/FormField";
+import HelpPopover from "../components/HelpPopover";
 import { ErrorMessage } from "../components/StateMessage";
 import {
   EDUCATION_LEVEL_OPTIONS,
@@ -187,23 +188,54 @@ export default function Onboarding() {
     }
   }
 
+  const progressPct = Math.round(((stepIndex + 1) / STEPS.length) * 100);
+
   return (
     <main className="page wizard-page">
-      <div className="wizard-progress" role="progressbar" aria-valuenow={stepIndex + 1} aria-valuemin={1} aria-valuemax={STEPS.length}>
-        {STEPS.map((s, i) => (
-          <span key={s.key} className={`wizard-dot${i === stepIndex ? " active" : ""}${i < stepIndex ? " done" : ""}`} />
-        ))}
-      </div>
+      <div className="wizard-layout">
+        <aside className="wizard-rail">
+          <div className="wizard-rail-brand">ASBO</div>
+          <div className="wizard-rail-title">Let's understand your situation</div>
+          <p className="wizard-rail-copy">
+            A few short steps so we can match you against every active government scheme. You can
+            skip anything you're unsure of.
+          </p>
+          <div className="wizard-rail-steps">
+            {STEPS.map((s, i) => (
+              <div
+                key={s.key}
+                className={`wizard-rail-step${i === stepIndex ? " current" : ""}${i < stepIndex ? " done" : ""}`}
+              >
+                <span className="wizard-rail-step-marker">{i < stepIndex ? "✓" : i + 1}</span>
+                {s.title}
+              </div>
+            ))}
+          </div>
+          <div
+            className="wizard-progress"
+            role="progressbar"
+            aria-valuenow={stepIndex + 1}
+            aria-valuemin={1}
+            aria-valuemax={STEPS.length}
+            style={{ marginTop: "1.25rem", marginBottom: 0 }}
+          >
+            {STEPS.map((s, i) => (
+              <span key={s.key} className={`wizard-dot${i === stepIndex ? " active" : ""}${i < stepIndex ? " done" : ""}`} />
+            ))}
+          </div>
+          <p className="wizard-rail-progress">{progressPct}% complete</p>
+        </aside>
 
-      <div className="page-header">
-        <span className="eyebrow">
-          Step {stepIndex + 1} of {STEPS.length}
-        </span>
-        <h1>{step.title}</h1>
-        <p>{step.subtitle}</p>
-      </div>
+        <div className="wizard-content">
+          <div className="page-header" style={{ marginBottom: "1.25rem", paddingBottom: "1rem" }}>
+            <span className="eyebrow">
+              Step {stepIndex + 1} of {STEPS.length}
+            </span>
+            <h1>{step.title}</h1>
+            <p>{step.subtitle}</p>
+          </div>
 
-      <form onSubmit={handlePrimaryAction} noValidate>
+          <form onSubmit={handlePrimaryAction} noValidate>
         {step.key === "basics" && (
           <div className="form-grid">
             <TextField label="Full name" name="name" required value={form.name} onChange={handleChange} error={errors.name} />
@@ -239,6 +271,12 @@ export default function Onboarding() {
               value={form.annual_income}
               onChange={handleChange}
               error={errors.annual_income}
+              help={
+                <HelpPopover>
+                  Your total income from all household members over one year. Some schemes use
+                  gross income, others income after deductions — use your best estimate.
+                </HelpPopover>
+              }
             />
             <TextField
               label="Land holding (acres)"
@@ -279,7 +317,19 @@ export default function Onboarding() {
               onChange={handleChange}
               options={SOCIAL_CATEGORY_OPTIONS}
             />
-            <SelectField label="BPL status" name="bpl_status" value={form.bpl_status} onChange={handleChange} options={TRI_STATE_OPTIONS} />
+            <SelectField
+              label="BPL status"
+              name="bpl_status"
+              value={form.bpl_status}
+              onChange={handleChange}
+              options={TRI_STATE_OPTIONS}
+              help={
+                <HelpPopover>
+                  Whether your household holds a Below Poverty Line card or equivalent
+                  state-issued status. Leave as "Unsure" if you don't know.
+                </HelpPopover>
+              }
+            />
             <SelectField
               label="Disability status"
               name="disability_status"
@@ -336,7 +386,9 @@ export default function Onboarding() {
             {submitting ? "Submitting…" : isLastStep ? "Find my schemes" : "Continue"}
           </button>
         </div>
-      </form>
+          </form>
+        </div>
+      </div>
     </main>
   );
 }

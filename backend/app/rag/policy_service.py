@@ -14,6 +14,8 @@ NOT read or upgrade based on); anything from the vector corpus is labeled `sourc
 either label themselves.
 """
 
+import asyncio
+import logging
 import re
 
 from bson import ObjectId
@@ -25,6 +27,13 @@ from app.rag.embeddings import EmbeddingError, embed_query
 from app.rag.retriever import Bm25Index, HybridRetriever
 from app.rag.schemas import RetrievedEvidence, RetrievalResult
 from app.rag.vector_store import get_persistent_collection
+
+logger = logging.getLogger(__name__)
+
+EMBEDDING_TIMEOUT_SECONDS = 10.0
+"""Mirrors `explanation/service.py`'s `LLM_TIMEOUT_SECONDS` — the embeddings call is a network
+request to the same Gemini API and must never be allowed to hang the pipeline indefinitely when
+that network is slow or unreachable (BR-010, same as every other RAG-backed call here)."""
 
 _DEADLINE_PATTERNS = [
     re.compile(r"within\s+\d+\s+(day|days|month|months|year|years)", re.IGNORECASE),
@@ -71,13 +80,31 @@ class PolicyKnowledgeService:
         if not query.strip():
             return RetrievalResult(query=query, evidence=[], verified=False, note="Empty query.")
         try:
-            embedding = await self._embed(query)
+            embedding = await asyncio.wait_for(self._embed(query), timeout=EMBEDDING_TIMEOUT_SECONDS)
         except EmbeddingError:
             return RetrievalResult(
                 query=query, evidence=[], verified=False,
                 note="Policy retrieval is currently unavailable (embeddings not configured).",
             )
-        evidence = self._retriever.retrieve(query, embedding, top_k=top_k, where=filters)
+        except TimeoutError:
+            logger.warning("Embedding call timed out after %ss; degrading to an honest 'not verified' result.", EMBEDDING_TIMEOUT_SECONDS)
+            return RetrievalResult(
+                query=query, evidence=[], verified=False,
+                note="Policy retrieval timed out.",
+            )
+        try:
+            evidence = self._retriever.retrieve(query, embedding, top_k=top_k, where=filters)
+        except Exception:
+            # The vector store itself (Chroma) can throw for reasons that have nothing to do
+            # with whether a good answer exists — most commonly a transient read/write
+            # conflict while `ingest_policies.py` is actively writing to the same persist
+            # directory in a separate process. This must degrade exactly like every other
+            # external-dependency failure in this app (BR-010), never surface as a raw 500.
+            logger.warning("Vector store retrieval failed; degrading to an honest 'not verified' result.", exc_info=True)
+            return RetrievalResult(
+                query=query, evidence=[], verified=False,
+                note="Policy retrieval is temporarily unavailable. Please try again shortly.",
+            )
         if not evidence:
             return RetrievalResult(
                 query=query, evidence=[], verified=False,

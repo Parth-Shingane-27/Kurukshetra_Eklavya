@@ -100,6 +100,10 @@
     helpButton.textContent = "🛟 Explain this";
     helpButton.style.top = `${window.scrollY + rect.bottom + 6}px`;
     helpButton.style.left = `${window.scrollX + rect.left}px`;
+    // A mousedown on the button would otherwise collapse the page's text selection first,
+    // which fires our own `selectionchange` listener and removes this button from the DOM
+    // before the click event ever reaches it — so "Explain this" would silently do nothing.
+    helpButton.addEventListener("mousedown", (e) => e.preventDefault());
     helpButton.onclick = handleExplainClick;
     document.documentElement.appendChild(helpButton);
   }
@@ -258,6 +262,146 @@
     }
   }
 
+  // --- Screenshot capture (Section 7 Option B) ------------------------------------------------
+  // Only ever captures the region the user explicitly drags a box around — never the full
+  // page, never continuously, and always shown back to the user for review/cancel before
+  // anything is sent (Section 8's privacy requirements).
+  let captureButton = null;
+  let selectionOverlay = null;
+
+  function showCaptureButton() {
+    captureButton = document.createElement("button");
+    captureButton.className = "asbo-capture-button";
+    captureButton.textContent = "📷 Capture area";
+    captureButton.onclick = startAreaSelection;
+    document.documentElement.appendChild(captureButton);
+  }
+
+  function startAreaSelection() {
+    if (selectionOverlay) return;
+    const overlay = document.createElement("div");
+    overlay.className = "asbo-selection-overlay";
+    const box = document.createElement("div");
+    box.className = "asbo-selection-box";
+    overlay.appendChild(box);
+    document.documentElement.appendChild(overlay);
+    selectionOverlay = overlay;
+
+    let startX = 0;
+    let startY = 0;
+    let dragging = false;
+
+    function onMouseDown(e) {
+      dragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      box.style.left = `${startX}px`;
+      box.style.top = `${startY}px`;
+      box.style.width = "0px";
+      box.style.height = "0px";
+    }
+    function onMouseMove(e) {
+      if (!dragging) return;
+      const x = Math.min(e.clientX, startX);
+      const y = Math.min(e.clientY, startY);
+      box.style.left = `${x}px`;
+      box.style.top = `${y}px`;
+      box.style.width = `${Math.abs(e.clientX - startX)}px`;
+      box.style.height = `${Math.abs(e.clientY - startY)}px`;
+    }
+    async function onMouseUp() {
+      if (!dragging) return;
+      dragging = false;
+      const rect = box.getBoundingClientRect();
+      overlay.remove();
+      selectionOverlay = null;
+      if (rect.width < 10 || rect.height < 10) return; // ignore an accidental click/tiny drag
+      await captureAndPreview(rect);
+    }
+
+    overlay.addEventListener("mousedown", onMouseDown);
+    overlay.addEventListener("mousemove", onMouseMove);
+    overlay.addEventListener("mouseup", onMouseUp);
+  }
+
+  async function captureAndPreview(rect) {
+    const response = await chrome.runtime.sendMessage({
+      type: "CAPTURE_REGION",
+      rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
+      devicePixelRatio: window.devicePixelRatio || 1,
+    });
+    if (!response?.ok) {
+      renderPanel({
+        question_meaning: "We couldn't capture that area.",
+        what_information_is_expected: "Please try again, or select the text directly instead.",
+      });
+      return;
+    }
+    showScreenshotPreview(response.croppedBase64);
+  }
+
+  function showScreenshotPreview(base64) {
+    const overlay = document.createElement("div");
+    overlay.className = "asbo-preview-overlay";
+
+    const card = document.createElement("div");
+    card.className = "asbo-preview-card";
+
+    const img = document.createElement("img");
+    img.className = "asbo-preview-image";
+    img.src = `data:image/png;base64,${base64}`;
+    card.appendChild(img);
+
+    const warning = document.createElement("p");
+    warning.className = "asbo-preview-warning";
+    warning.textContent =
+      "Check this image before sending — don't include passwords, OTPs, payment details, or ID numbers.";
+    card.appendChild(warning);
+
+    const controls = document.createElement("div");
+    controls.className = "asbo-panel-controls";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.onclick = () => overlay.remove();
+    controls.appendChild(cancelBtn);
+
+    const sendBtn = document.createElement("button");
+    sendBtn.textContent = "Send for explanation";
+    sendBtn.onclick = async () => {
+      overlay.remove();
+      await handleExplainScreenshot(base64);
+    };
+    controls.appendChild(sendBtn);
+
+    card.appendChild(controls);
+    overlay.appendChild(card);
+    document.documentElement.appendChild(overlay);
+  }
+
+  async function handleExplainScreenshot(base64) {
+    if (!assistanceToken) return;
+    lastRequestPayload = { selected_text: null, field_label: "(screenshot)" };
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/assistance/explain-screenshot`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${assistanceToken}`,
+          "X-Assistance-Origin": origin,
+        },
+        body: JSON.stringify({ screenshot_base64: base64, mime_type: "image/png", explanation_mode: "text_and_voice" }),
+      });
+      const data = await res.json();
+      renderPanel(data);
+    } catch {
+      renderPanel({
+        question_meaning: "We couldn't reach the assistant right now.",
+        what_information_is_expected: "Check your connection and try again.",
+      });
+    }
+  }
+
   // --- Boot -------------------------------------------------------------------------------
   injectStyles();
   const validation = await validate();
@@ -273,4 +417,6 @@
   activeBadge.textContent = `🛟 ASBO assistance active${schemeName ? ` — ${schemeName}` : ""}`;
   document.documentElement.appendChild(activeBadge);
   setTimeout(() => activeBadge.remove(), 4000);
+
+  showCaptureButton();
 })();

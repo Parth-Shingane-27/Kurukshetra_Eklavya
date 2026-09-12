@@ -1,4 +1,4 @@
-"""FR-016 — Two-step (email+password+OTP) authentication."""
+"""Email+password authentication."""
 
 from app.core.config import get_settings
 
@@ -14,14 +14,7 @@ async def _register_and_login(client, email="citizen@example.com", password="s3c
 
     login_res = await client.post("/api/auth/login", json={"email": email, "password": password})
     assert login_res.status_code == 200, login_res.text
-    body = login_res.json()
-    assert body["debug_otp"] is not None  # no RESEND_API_KEY configured in tests
-
-    verify_res = await client.post(
-        "/api/auth/verify-otp", json={"pending_token": body["pending_token"], "code": body["debug_otp"]}
-    )
-    assert verify_res.status_code == 200, verify_res.text
-    return verify_res.json()
+    return login_res.json()
 
 
 async def test_register_creates_citizen_account(client):
@@ -76,7 +69,7 @@ async def test_login_unknown_email_rejected(client):
     assert res.status_code == 401
 
 
-async def test_full_two_step_login_issues_token_and_me_works(client):
+async def test_login_issues_token_and_me_works(client):
     tokens = await _register_and_login(client, email="fullflow@example.com")
     assert tokens["token_type"] == "bearer"
     assert tokens["user"]["email"] == "fullflow@example.com"
@@ -90,33 +83,6 @@ async def test_full_two_step_login_issues_token_and_me_works(client):
 
 async def test_me_without_token_rejected(client):
     res = await client.get("/api/auth/me")
-    assert res.status_code == 401
-
-
-async def test_verify_otp_wrong_code_rejected(client):
-    await client.post(
-        "/api/auth/register", json={"email": "badotp@example.com", "password": "s3cret-pass", "role": "citizen"}
-    )
-    login_res = await client.post("/api/auth/login", json={"email": "badotp@example.com", "password": "s3cret-pass"})
-    pending_token = login_res.json()["pending_token"]
-
-    res = await client.post("/api/auth/verify-otp", json={"pending_token": pending_token, "code": "000000"})
-    assert res.status_code == 401
-
-
-async def test_verify_otp_lockout_after_max_attempts(client):
-    await client.post(
-        "/api/auth/register", json={"email": "lockout@example.com", "password": "s3cret-pass", "role": "citizen"}
-    )
-    login_res = await client.post("/api/auth/login", json={"email": "lockout@example.com", "password": "s3cret-pass"})
-    pending_token = login_res.json()["pending_token"]
-
-    for _ in range(get_settings().otp_max_attempts):
-        res = await client.post("/api/auth/verify-otp", json={"pending_token": pending_token, "code": "000000"})
-        assert res.status_code == 401
-
-    # pending login is now gone even if the *correct* code is supplied afterward
-    res = await client.post("/api/auth/verify-otp", json={"pending_token": pending_token, "code": "000000"})
     assert res.status_code == 401
 
 

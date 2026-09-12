@@ -43,7 +43,7 @@ export default function Register() {
     <main className="page">
       <div className="page-header">
         <h1>Create an account</h1>
-        <p>You'll verify your email with a one-time code the first time you log in (FR-016).</p>
+        <p>Use your email and a password to sign in.</p>
       </div>
 
       <form className="card" onSubmit={handleSubmit}>

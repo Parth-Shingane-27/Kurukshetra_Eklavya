@@ -19,6 +19,8 @@ second, redundant check of the same JWT with no additional safety.
 
 import logging
 
+from langchain_core.exceptions import ModelRateLimitError
+from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, START, StateGraph
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -51,11 +53,83 @@ def _consolidate(state: FormAssistanceState) -> str:
     return "\n".join(p for p in parts if p)
 
 
+_TRANSCRIBE_PROMPT = (
+    "This image is a cropped screenshot of one small region of a government scheme "
+    "application form. Transcribe ONLY the visible question/field label, any answer options "
+    "shown (checkboxes, radio buttons, dropdown values), and any nearby help text — exactly as "
+    "written. Do not answer the question, do not explain anything, do not describe the image's "
+    "appearance or layout. If no readable form text is visible, respond with exactly: "
+    "NO_READABLE_TEXT"
+)
+
+# Fail fast rather than the client default (6 retries with exponential backoff, which can turn
+# a single rate-limited call into a 60s+ hang): one retry is enough to smooth over a transient
+# blip, and anything past that should surface to the citizen quickly instead of stalling the
+# whole assistance popup.
+_LLM_MAX_RETRIES = 1
+
+_RATE_LIMIT_ERROR = (
+    "Our AI assistant has hit its usage limit for the moment — please try again in a few "
+    "minutes, or select the form text directly instead."
+)
+
+
+async def _transcribe_screenshot(screenshot_base64: str, mime_type: str, settings) -> str | dict | None:
+    """Vision-only transcription step for the screenshot-capture path (Section 7 Option B) —
+    reuses the same Gemini model already used for explanation generation rather than adding a
+    separate OCR dependency; the model both reads and (later, in a separate call) explains the
+    text, matching how this codebase already treats Gemini as the one pluggable LLM service.
+    Returns None (not a fabricated transcription) on an unreadable image, or a dict describing a
+    genuine call failure (rate limit vs. anything else) so the caller can tell the citizen what
+    actually happened instead of always blaming the screenshot.
+    """
+    if not settings.gemini_api_key:
+        return None
+    try:
+        llm = ChatGoogleGenerativeAI(
+            model=settings.gemini_model, google_api_key=settings.gemini_api_key, max_retries=_LLM_MAX_RETRIES
+        )
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": _TRANSCRIBE_PROMPT},
+                {"type": "image_url", "image_url": f"data:{mime_type};base64,{screenshot_base64}"},
+            ]
+        )
+        result = await llm.ainvoke([message])
+        text = (result.content or "").strip()
+        if not text or text == "NO_READABLE_TEXT":
+            return None
+        return text
+    except ModelRateLimitError:
+        logger.warning("Screenshot transcription rate-limited.", exc_info=True)
+        return {"error": _RATE_LIMIT_ERROR}
+    except Exception as exc:
+        logger.warning("Screenshot transcription failed (%s: %s); falling back to the no-context path.", type(exc).__name__, exc)
+        return None
+
+
 async def extract_form_context_node(state: FormAssistanceState, config) -> dict:
     text = _consolidate(state)
-    if not text.strip():
-        return {"errors": ["No form content was provided to explain (selected text, field label, or help text)."]}
-    return {"consolidated_text": text}
+    if text.strip():
+        return {"consolidated_text": text}
+
+    if state.get("screenshot_base64"):
+        settings = get_settings()
+        transcribed = await _transcribe_screenshot(
+            state["screenshot_base64"], state.get("screenshot_mime_type") or "image/png", settings
+        )
+        if isinstance(transcribed, dict):
+            return {"errors": [transcribed["error"]]}
+        if transcribed:
+            return {"consolidated_text": transcribed}
+        return {
+            "errors": [
+                "Could not read any form text in that screenshot — try selecting a clearer, "
+                "smaller region, or select the text directly instead."
+            ]
+        }
+
+    return {"errors": ["No form content was provided to explain (selected text, field label, help text, or a screenshot)."]}
 
 
 async def detect_language_node(state: FormAssistanceState, config) -> dict:
@@ -138,13 +212,22 @@ async def generate_structured_explanation_node(state: FormAssistanceState, confi
         f"Relevant policy evidence:\n{evidence_text}\n"
     )
     try:
-        llm = ChatGoogleGenerativeAI(model=settings.gemini_model, google_api_key=settings.gemini_api_key)
+        llm = ChatGoogleGenerativeAI(
+            model=settings.gemini_model, google_api_key=settings.gemini_api_key, max_retries=_LLM_MAX_RETRIES
+        )
         structured_llm = llm.with_structured_output(FormExplanationDraft)
         result = await structured_llm.ainvoke(prompt)
         draft = result if isinstance(result, FormExplanationDraft) else FormExplanationDraft.model_validate(result)
         return {"draft": draft.model_dump()}
-    except Exception:
-        logger.warning("Form-assistance explanation generation failed; using deterministic fallback.", exc_info=True)
+    except ModelRateLimitError:
+        logger.warning("Form-assistance explanation rate-limited; using deterministic fallback.", exc_info=True)
+        draft = _fallback_draft(state)
+        draft["what_information_is_expected"] = _RATE_LIMIT_ERROR
+        return {"draft": draft}
+    except Exception as exc:
+        logger.warning(
+            "Form-assistance explanation generation failed (%s: %s); using deterministic fallback.", type(exc).__name__, exc
+        )
         return {"draft": _fallback_draft(state)}
 
 

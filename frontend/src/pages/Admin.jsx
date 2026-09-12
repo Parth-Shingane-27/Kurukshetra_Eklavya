@@ -8,6 +8,7 @@ import {
   updateScheme,
 } from "../api/client";
 import { getUser, isLoggedIn, subscribe } from "../auth/session";
+import AppShell from "../components/layout/AppShell";
 import ApplyLink from "../components/ApplyLink";
 import { SelectField, TextField } from "../components/FormField";
 import { ErrorMessage, InfoMessage, LoadingMessage } from "../components/StateMessage";
@@ -326,11 +327,12 @@ export default function Admin() {
   const schemeOptions = [{ value: "", label: "Select a scheme…" }, ...schemes.map((s) => ({ value: s.id, label: s.name }))];
 
   return (
-    <main className="page">
-      <div className="page-header">
-        <h1>Scheme knowledge base admin</h1>
-        <p>Curate the scheme catalogue without redeploying code (FR-011).</p>
-      </div>
+    <AppShell
+      variant="admin"
+      active="admin-schemes"
+      title="Scheme knowledge base admin"
+      subtitle="Curate the scheme catalogue without redeploying code (FR-011)."
+    >
 
       <div className="card">
         {isAdmin ? (
@@ -676,6 +678,6 @@ export default function Admin() {
           </button>
         </div>
       </form>
-    </main>
+    </AppShell>
   );
 }

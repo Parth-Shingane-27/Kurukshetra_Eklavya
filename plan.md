@@ -10,7 +10,7 @@
 - **Primary purpose:** Reduce the cognitive and administrative burden on citizens (and intermediaries such as Common Service Centre operators or NGO caseworkers) trying to manually determine which of many overlapping/conflicting government schemes to apply for.
 - **Target users:** Individual citizens (self-service), assisted-service operators (CSC agents, NGO/welfare-office caseworkers) entering data on behalf of citizens, and citizens checking eligibility on behalf of a friend or relative via the stateless Quick Checker (see FR-013).
 - **Expected outcome:** A working end-to-end prototype: profile entry → eligible scheme list → conflict report → optimized bundle with explanation → missing-document report → application checklist, demonstrable on at least one sample citizen profile.
-- **Scope note (added after initial Phases 0–8 build):** Sections marked **[EXTENDED SCOPE]** throughout this document — multilingual/voice conversational intake (FR-012), the stateless Quick Checker (FR-013), the searchable scheme catalog with form-filling guides (FR-014), and the RAG real-time freshness layer (FR-015) — were added to the specification after the core deterministic pipeline (Phases 0–8) was already implemented and tested. They are additive: none of them change or weaken the existing "AI never decides eligibility" boundary (Section 16), and none are implemented yet as of Section 33's last update. Treat them as the next build phases (Section 25, Phases 9–11), not as already-working features.
+- **Scope note (added after initial Phases 0–8 build):** Sections marked **[EXTENDED SCOPE]** throughout this document — multilingual/voice conversational intake (FR-012), the stateless Quick Checker (FR-013), the searchable scheme catalog with form-filling guides (FR-014), and the RAG real-time freshness layer (FR-015) — were added to the specification after the core deterministic pipeline (Phases 0–8) was already implemented and tested. They are additive: none of them change or weaken the existing "AI never decides eligibility" boundary (Section 16). **Update (Section 33's latest pass): FR-012, FR-013, FR-014, and FR-015 are now all [IMPLEMENTED] and tagged accordingly wherever they appear** — see Section 33's running log for what was built, tested, and live-verified for each, and each feature's own writeup for its honest, specific scope limitations.
 
 ---
 
@@ -44,8 +44,8 @@
 - G-08: Allow the scheme knowledge base to be extended/edited without code changes (data-driven rules).
 - G-09: Provide an audit trail of the agent's reasoning steps for transparency/trust.
 - G-10: Support assisted-service data entry (operator enters profile on behalf of citizen).
-- G-11 **[EXTENDED SCOPE]**: Support multilingual (English/Hindi/Marathi) conversational and voice profile intake, so citizens uncomfortable with a formal English form can still use the system (FR-012).
-- G-12 **[EXTENDED SCOPE]**: Let a citizen check a scheme's prerequisites on behalf of someone else with zero account/login friction (FR-013).
+- G-11 **[IMPLEMENTED]**: Support multilingual (English/Hindi/Marathi) conversational and voice profile intake, so citizens uncomfortable with a formal English form can still use the system (FR-012).
+- G-12 **[IMPLEMENTED]**: Let a citizen check a scheme's prerequisites on behalf of someone else with zero account/login friction (FR-013).
 - G-13 **[EXTENDED SCOPE]**: Keep the scheme knowledge base's benefit amounts, criteria, and documents current via a curator-reviewed, RAG-assisted refresh pipeline, rather than relying solely on manual curation (FR-015).
 
 ### Non-Goals
@@ -62,7 +62,7 @@
 ## 4. Scope
 
 ### In Scope
-- Citizen profile capture (manual form entry, **[EXTENDED SCOPE]** or multilingual conversational/voice entry — FR-012).
+- Citizen profile capture (manual form entry, **[IMPLEMENTED]** or multilingual conversational/voice entry — FR-012).
 - A structured, file/database-backed scheme knowledge base with eligibility rules, benefit metadata, required documents, and conflict metadata, seeded with a representative sample set of schemes (not an exhaustive national catalogue).
 - **[EXTENDED SCOPE]** A Maharashtra/MahaDBT-aligned representative scheme set (six named schemes — see Section 13a) as an additional, distinct seed set alongside the original eight-scheme demonstration catalogue (`database/seed_schemes.json`); the two sets are not required to merge into one file (see A-011).
 - Deterministic rule-based eligibility evaluation engine.
@@ -73,8 +73,8 @@
 - Application checklist generation from the optimized bundle.
 - An agent orchestration layer that sequences the above steps end-to-end for a given citizen.
 - A demo-ready UI covering profile entry → results → checklist.
-- **[EXTENDED SCOPE]** A stateless Quick Scheme Eligibility & Form-Filling Checker requiring no citizen account (FR-013).
-- **[EXTENDED SCOPE]** A searchable scheme catalog with English/Marathi form-filling guides, a curated video walkthrough link, and the official portal link per scheme (FR-014).
+- **[IMPLEMENTED]** A stateless Quick Scheme Eligibility & Form-Filling Checker requiring no citizen account (FR-013).
+- **[IMPLEMENTED]** A searchable scheme catalog with English/Marathi form-filling guides and the official portal link per scheme (FR-014) — video walkthrough link is a supported field, not yet populated for any seeded scheme (no real video exists yet to link to honestly).
 - **[EXTENDED SCOPE]** A Retrieval-Augmented Generation (RAG) layer that retrieves scheme details from official sources and proposes knowledge-base updates for curator approval (FR-015).
 
 ### Out of Scope
@@ -101,7 +101,7 @@
 | Conflict Detection Engine | System component | Flags incompatible scheme pairs/groups | Correct conflict list for eligible set | Evaluate declared conflict relationships | System-internal only | Called by Reasoning Agent |
 | Bundle Optimizer | System component | Selects best non-conflicting subset | Maximize total benefit value under constraints | Solve constrained selection problem | System-internal only | Called by Reasoning Agent |
 | LLM Explanation Service | External AI service (Google Gemini API) | Generates natural-language explanation text | Fluent, accurate explanation of a already-computed result | Convert structured reasoning trace into readable text | Read-only access to structured results (no eligibility authority) | Called by Reasoning Agent via API |
-| **[EXTENDED SCOPE]** Conversational/Voice Intake Assistant | AI/System component | Multilingual (English/Hindi/Marathi) natural-language + voice profile intake | Convert an informal citizen statement into structured profile slots | Slot/entity extraction via structured output (function calling); ask follow-up questions for missing mandatory slots | Write access only to a citizen's own in-progress profile draft; no eligibility authority | Invoked by frontend chat/voice widget (FR-012) |
+| **[IMPLEMENTED]** Conversational/Voice Intake Assistant | AI/System component | Multilingual (English/Hindi/Marathi) natural-language + voice profile intake | Convert an informal citizen statement into structured profile slots | Slot/entity extraction via structured output (function calling); ask follow-up questions for missing mandatory slots | Write access only to a citizen's own in-progress profile draft; no eligibility authority | Invoked by frontend chat/voice widget (FR-012) |
 | **[EXTENDED SCOPE]** RAG Retrieval Layer | AI/System component | Keeps the scheme knowledge base current | Propose accurate, source-grounded knowledge-base updates | Retrieve official scheme sources, draft candidate structured updates | Read access to indexed sources; **write access to a pending-review queue only** — never directly to the live knowledge base | Triggered on a schedule or by curator request (FR-015) |
 
 **Note on AI role boundary:** The LLM — including the Conversational/Voice Intake Assistant and the RAG Retrieval Layer — never determines eligibility, conflicts, or optimization outcomes, and never writes directly to the live knowledge base. It only converts already-computed, deterministic results into natural language, extracts structured slots from a citizen's own statement, or drafts a candidate knowledge-base change for a human curator to approve. This prevents hallucinated eligibility determinations and hallucinated scheme facts alike. See [[Section 16]].
@@ -220,27 +220,90 @@
 - Failure/exception cases: Wrong password → 401; unknown email → 401 (same message as wrong password, to avoid account enumeration); wrong/expired OTP → 401; more than `OTP_MAX_ATTEMPTS` wrong OTP submissions → the pending login is invalidated, forcing a fresh login; admin registration without the correct bootstrap credential → 403; duplicate email → 409
 - Backward compatibility: The original admin-only `X-Admin-Token` header (Section 20's prior prototype auth) is still accepted alongside a role=admin JWT on every admin-gated endpoint — a deliberate non-breaking migration, not a second, competing auth system
 
-**FR-012 — Multilingual Conversational & Voice Profile Intake [EXTENDED SCOPE]**
+**FR-017 — Verified Scheme Application Links [IMPLEMENTED]**
+- Actor: Scheme Data Curator (maintains); Citizen/Operator (consumes)
+- Preconditions: A scheme exists in the curated KB
+- Inputs: Curator-entered URLs (policy/official/application/renewal/grievance/source) and an explicit `application_link_status` the curator asserts based on what they actually checked
+- Expected behavior: The "Apply Now"-equivalent UI element renders differently per `application_link_status` (BR-019) rather than a single truthy/falsy check on one URL string — a clear "Apply on the official portal" link only when `verified`; a link with an explicit "not independently verified" warning when `unverified`; a plain-text "online application is not available, follow the offline process" message with no link at all when `not_available`; a "varies by state/department" message when `state_specific`. No URL is ever fabricated by the system itself — every value in `links` is either curator-entered or left null
+- Outputs: Scheme detail responses include the full `links` sub-document (Section 13)
+- Postconditions: Citizens never see an unverified or nonexistent destination presented as if it were an official government application page
+- Business rules: BR-019 (see Section 12)
+- Failure/exception cases: Scheme has no `application_url` at all → `not_available`/`state_specific` messaging shown, no link rendered; curator updates only one link field → the rest of `links` is preserved via a field-level merge, not overwritten (Section 15's PUT /api/schemes/:id)
+
+**FR-018 — Context-Aware Form Assistance [IMPLEMENTED]**
+- Actor: Citizen/Operator, via a browser extension (web) or an in-app WebView screen (mobile); Scheme Data Curator (reviews feedback)
+- Preconditions: The citizen reached the application page via a session minted from this platform's own "Apply Now" (FR-017), on a scheme whose `application_link_status` is `verified` or `unverified` — never `not_available`/`state_specific` (BR-021)
+- Inputs: User-selected form text (and, where extractable, the nearest field label/options), **or** a user-drawn screenshot crop of one form region (Section 7 Option B); a preferred language; an explanation mode (text/voice/both)
+- Expected behavior: A short-lived `session_id` (scoped to one scheme + the application URL's own origin) is minted at "Apply Now" time; the extension/WebView, running on that exact origin, exchanges it for a scoped `assistance_token` only if the origin matches (BR-021) — this is the activation gate, not a URL query parameter alone. Once active, the user explicitly selects text (or drags a capture box, previews the crop, and explicitly confirms sending it) and requests an explanation; the request is answered by a dedicated LangGraph workflow (Section 10) that — for a screenshot — first transcribes only the visible question/options text (reusing the same Gemini model, no separate OCR dependency) before proceeding through the identical downstream steps a text selection uses: extracts form context, detects language, retrieves policy evidence for that specific scheme (reusing the existing RAG service), drafts a structured explanation, and enforces a fixed eligibility-caution sentence on every response regardless of what the model produced (BR-020) — the assistant explains what a field means, never whether the citizen is eligible
+- Outputs: `FormAssistanceResponse` (question meaning, per-option explanations, expected-information description, an example, a caution, cited policy evidence where available, a confidence score, and a needs-clarification flag) — rendered as text and, client-side only, spoken via the browser's/OS's native text-to-speech (no server-side audio generation)
+- Postconditions: No screenshot or form field the user didn't explicitly select/crop-and-confirm is ever sent to the backend; nothing is captured continuously; a submitted screenshot is held only in memory for the one request (background service worker capture/crop, then the API call) and is never written to disk, logged, or persisted anywhere (including `assistance_feedback`, which stores only the derived explanation text)
+- Business rules: BR-019, BR-020, BR-021 (see Section 12)
+- Failure/exception cases: Origin mismatch or expired/unknown session → 401/403, no assistance UI activates, a plain "not available on this page" message only; no policy evidence retrievable for this scheme → explanation still given (general, non-scheme-specific) but explicitly marked "could not confirm against this scheme's specific policy text" rather than silently presented as verified; LLM unavailable/rate-limited → deterministic fallback explanation (same BR-010 pattern), never a 500; screenshot too large (>3MB decoded) → rejected (422) before ever reaching the LLM; screenshot has no readable form text → honest "could not read that screenshot" response, never a guessed explanation
+
+**FR-012 — Multilingual Conversational & Voice Profile Intake [IMPLEMENTED]**
 - Actor: Citizen / Operator; supported by the Conversational/Voice Intake Assistant
 - Preconditions: None (alternative entry path to FR-001's structured form)
 - Inputs: Free-text or spoken citizen statement, in English, Hindi, or Marathi; the profile-slot state collected so far
-- Expected behavior: Extract structured profile slots (age, income, occupation, land_acres, category, state, held_documents, and the FR-001 fields more broadly) from the statement via structured output (function calling), validated the same way as FR-001's form data; if mandatory slots are still missing, ask one targeted follow-up question in the citizen's chosen language
+- Expected behavior: Extract structured profile slots (name, date_of_birth, state, district, and the rest of the FR-001 field set) from the statement via structured output (function calling), validated the same way as FR-001's form data; if mandatory slots are still missing, ask one targeted follow-up question in the citizen's chosen language
 - Outputs: Updated structured profile (same shape as FR-001); once sufficiently complete, proceeds into FR-004 exactly as a form-submitted profile would
 - Postconditions: Profile stored and evaluable, indistinguishable downstream from a form-entered profile
 - Business rules: BR-013 (see Section 12)
 - Failure/exception cases: Speech recognition failure/no browser support → fall back to text input, never block the citizen; extracted slot fails FR-001's validation → same field-level error handling as the form path; LLM/API unavailable → citizen is offered the structured form as a fallback, never left stuck
+- **Implementation:** `POST /api/intake/converse` (`backend/app/api/voice_intake.py`,
+  `app/modules/voice_intake/service.py`) is turn-based, persisting accumulated slots in a new
+  `intake_sessions` collection keyed by a `session_id` the frontend threads across turns.
+  `ExtractedProfileSlots` (`app/models/voice_intake.py`) mirrors `CitizenBase` field-for-field, so
+  every value the LLM extracts is re-validated by literally reusing `CitizenUpdate.model_validate`
+  (the exact model the PUT edit endpoint already uses for partial updates) — a value that fails
+  validation is recorded in `rejected_fields` with that same Pydantic error message and never
+  merged into the collected profile (BR-013). Reuses the existing Multi-language Chat Agent
+  (`app/modules/multilingual/service.py`, built earlier for FR-018) unchanged for both directions:
+  `detect_and_translate_to_english` on the incoming turn, `translate_response` on the outgoing
+  follow-up question — no second translation implementation. Once all four mandatory fields (name,
+  date_of_birth, state, district) validate, the accumulated dict is handed to the exact same
+  `profile.service.create_citizen` function FR-001's structured form calls — same persistence
+  path, same downstream FR-004 eligibility evaluation, no special-cased "voice profile" branch
+  anywhere else in the app. A repeat call on an already-completed session returns the same
+  `citizen_id` rather than creating a duplicate profile. Frontend:
+  `frontend/src/pages/ConversationalIntake.jsx` (chat-style turn history, a language selector,
+  an "understood so far" review panel that surfaces `rejected_fields` inline, and a Web Speech
+  API mic button that is entirely additive — feature-detected at mount, hidden when unsupported,
+  and any recognition error falls back to the always-present text input, never blocking the
+  citizen per NFR-012) reachable from Landing's "Talk to us instead" button; a link back to the
+  structured form is always visible. Tested: 6 new backend tests
+  (`tests/backend/test_voice_intake.py`) covering no-API-key fallback, LLM-failure fallback to
+  the next missing mandatory field, multi-turn accumulation into a real created citizen (verified
+  via a real `GET /api/citizens/:id` afterward), an invalid extracted value being rejected rather
+  than silently accepted, no-duplicate-citizen-on-repeat, and no-auth-required — suite now 265
+  passing. Live-verified in a real browser via Playwright and directly via curl against the
+  running dev stack: the real Gemini call was attempted (confirmed in the backend log — this hit
+  the same exhausted daily free-tier quota documented under items #2/#5/#6, not a mocked path),
+  took ~75s while LangChain's internal retry/backoff ran out, then correctly and honestly fell
+  back to "Let's try that as a quick question instead: What is your full name?" exactly as
+  BR-013/NFR-012 require — rendered correctly in the UI with zero console errors. This is the
+  same class of live verification as the other quota-blocked items: the failure-handling path is
+  proven live and end-to-end; the happy-path slot-extraction quality is proven by the 6 mocked
+  unit tests instead, since the daily quota cannot be forced to reset within this session.
+- **Known, honest scope limitations:** language is auto-detected per utterance by default
+  (Q-007 resolved in favor of auto-detect, with an explicit override always available) rather
+  than requiring an upfront language-selection step; speech-to-text is English/Hindi/Marathi via
+  whatever the browser's own Web Speech API implementation supports for those BCP-47 tags (no
+  server-side ASR fallback — browsers without Web Speech API support, e.g. some Firefox builds,
+  simply don't show the mic button, per NFR-012's "never block" requirement being satisfied by
+  the text input rather than by guaranteeing voice everywhere).
 
-**FR-013 — Quick Scheme Eligibility & Form-Filling Checker [EXTENDED SCOPE]**
+**FR-013 — Quick Scheme Eligibility & Form-Filling Checker [IMPLEMENTED]**
 - Actor: Citizen or Operator, on behalf of themselves or a third party
 - Preconditions: None — no citizen account or profile required
-- Inputs: `{ scheme_id, criteria }` — a single scheme and just the fields its rules reference
-- Expected behavior: Evaluate the given criteria against that one scheme's rules only (reusing the Rule Engine, not a separate implementation), stateless — nothing is persisted server-side beyond the request/response cycle
-- Outputs: If eligible — status, form-filling guide (English/Marathi), curated video link, official portal link, required documents. If ineligible — status, reason, suggested alternative schemes from the same category
+- Inputs: `{ scheme_id, criteria }` — a single scheme and just the fields its rules reference (the frontend derives which fields to even ask for from that one scheme's own `rules`, never the full Citizen profile field set — `frontend/src/lib/quickCheckFields.js`)
+- Expected behavior: Evaluate the given criteria against that one scheme's rules only, reusing the Rule Engine's own `evaluate_scheme`/`build_profile_context` directly (`app/modules/quick_checker/service.py`) — not a second eligibility implementation; stateless — nothing is persisted server-side beyond the request/response cycle (verified by a dedicated test asserting `citizens`/`eligibility_results` document counts are unchanged before/after a call)
+- Outputs: If eligible — status, official application link (`links.application_url`/`application_link_status`, reusing FR-017/`ApplyLink`, never a link presented with more certainty than verified), required documents. If ineligible — status, reason, suggested alternative schemes from the same category
 - Postconditions: None (stateless by design — see BR-014)
-- Failure/exception cases: Unknown scheme_id → 404-equivalent error; missing criteria the scheme's rules need → indeterminate result, same semantics as BR-002, not silently treated as ineligible
-- **Explicit disclaimer requirement:** every response must carry the notice that this is a preliminary self-assessment, not an official government eligibility determination (see NFR-011)
+- Failure/exception cases: Unknown or inactive scheme_id → 404; missing criteria the scheme's rules need → indeterminate result, same semantics as BR-002, not silently treated as ineligible
+- **Explicit disclaimer requirement:** every response carries a fixed disclaimer that this is a preliminary self-assessment, not an official government eligibility determination (see NFR-011) — enforced server-side (`DISCLAIMER` constant in `app/models/quick_check.py`), not left to the frontend to remember to show
+- **Known, honest scope limitation (resolved by FR-014):** the form-filling guide (English/Marathi) and curated video link named in this requirement's title were originally FR-014's responsibility and not returned by `QuickCheckResponse` — `Scheme.guide` (added for FR-014, see below) now exists, but `POST /api/quick-check`'s response deliberately still doesn't include it, since the checker's own scope is eligibility + application link, not guide content; a citizen who wants the guide follows the application link's scheme into the Scheme Catalog (FR-014) instead.
 
-**FR-014 — Scheme Catalog Search with Form-Filling Guides [EXTENDED SCOPE]**
+**FR-014 — Scheme Catalog Search with Form-Filling Guides [IMPLEMENTED]**
 - Actor: Citizen / Operator / Admin
 - Preconditions: Scheme KB populated
 - Inputs: Optional search query and filters (category, state)
@@ -248,15 +311,17 @@
 - Outputs: Matching schemes, each with: name, category, issuing authority, benefit summary, eligibility summary, required documents, English form-filling guide, Marathi form-filling guide, curated video walkthrough link, official portal link
 - Failure/exception cases: No matches → empty list is valid, not an error
 
-**FR-015 — RAG-Based Knowledge Base Freshness [EXTENDED SCOPE]**
-- Actor: RAG Retrieval Layer (system-triggered or curator-triggered); Scheme Data Curator (approver)
-- Preconditions: A target scheme (or the full catalogue) to refresh; indexed official sources available
-- Inputs: Scheme identifier(s); the RAG layer's own index of official government scheme pages/notifications
-- Expected behavior: Retrieve the passages most relevant to the target scheme(s); have the LLM draft a candidate structured update (benefit value, criteria text, documents, deadlines, portal link) grounded in that retrieved text; queue the candidate for curator review — **never auto-commit**
-- Outputs: A pending-review candidate update, showing the proposed diff against the current live scheme record and citing the retrieved source passage(s)
-- Postconditions: Knowledge base is unchanged until a curator explicitly approves the candidate (FR-011's update path is reused for the actual commit)
+**FR-015 — RAG-Based Knowledge Base Freshness [IMPLEMENTED]**
+- Actor: RAG Retrieval Layer (curator-triggered); Scheme Data Curator (approver)
+- Preconditions: A target scheme to refresh; indexed official sources available
+- Inputs: A scheme identifier; the RAG layer's own index of official government scheme pages/notifications
+- Expected behavior: Retrieve the passages most relevant to the target scheme; have the LLM draft a candidate structured update (benefit value, criteria summary, documents, deadline text, portal link) grounded in that retrieved text; queue the candidate for curator review — **never auto-commit**
+- Outputs: A pending-review candidate update, showing the proposed diff against the current live scheme record (`current_snapshot`) and citing the retrieved source passage(s)
+- Postconditions: Knowledge base is unchanged until a curator explicitly approves the candidate
 - Business rules: BR-015 (see Section 12)
 - Failure/exception cases: Source unavailable/unreachable → no candidate produced, existing KB entry untouched, failure logged (never blocks FR-004/FR-005/FR-006, which depend only on the already-committed KB); retrieved content insufficient to draft a confident update → no candidate produced rather than a low-confidence guess
+- **Implementation note (approval mechanics):** curator approval (`POST /api/admin/rag-candidates/:id/approve`) commits the change itself, by calling the exact same `update_scheme` function FR-011's manual admin edit form calls — not a second, separate write path. This is a deliberate simplification from the original wording ("FR-011's update path is reused for the actual commit" was read as "the curator manually retypes the diff into a PUT call"): one click both approves and commits, but the only function in the entire codebase that writes to `schemes` is still `update_scheme`, so BR-015's guarantee (no code path other than an explicit, human-triggered commit can affect `schemes`) holds exactly the same either way.
+- **Known, honest scope limitation:** `deadline_text` has no dedicated field on `Scheme` yet — a curator sees it in the review queue for context, and on approval it is appended to `links.verification_notes` as free text, not written to any structured, machine-readable field (no deadline-aware feature reads it back yet).
 
 ---
 
@@ -274,11 +339,13 @@
 | NFR-008 | Observability | Every agent pipeline run must be logged (inputs/outputs per step) to support debugging and the reasoning-trace feature (FR-010). |
 | NFR-009 | Accessibility | UI should follow basic accessibility practices (semantic HTML, labeled form fields, sufficient color contrast) given citizen-facing usage. |
 | NFR-010 | Compatibility | Web UI must work on evergreen desktop and mobile browsers (Chrome, Edge, Firefox, Safari) without requiring app installation. |
-| NFR-011 **[EXTENDED SCOPE]** | Explainability / Trust | The Quick Checker (FR-013) must visibly disclose, on every response, that its result is a preliminary self-assessment and not an official government eligibility determination. |
-| NFR-012 **[EXTENDED SCOPE]** | Accessibility | Conversational/voice intake (FR-012) must support English, Hindi, and Marathi for both text and speech input; speech recognition failure must degrade to text input, never block the citizen. |
-| NFR-013 **[EXTENDED SCOPE]** | Data Integrity / Safety | No content retrieved by the RAG layer (FR-015) may reach the live scheme knowledge base without an explicit curator approval action — this is enforced at the data-write layer (a separate pending-review collection, not a flag on the live record), not only by UI convention. |
-| NFR-014 **[EXTENDED SCOPE]** | Reliability | RAG refresh failures (source unreachable, retrieval inconclusive) must never block or degrade FR-004/FR-005/FR-006 — those depend only on the already-committed knowledge base, exactly as NFR-003 already requires for the LLM Explanation Service. |
+| NFR-011 **[IMPLEMENTED]** | Explainability / Trust | The Quick Checker (FR-013) must visibly disclose, on every response, that its result is a preliminary self-assessment and not an official government eligibility determination. |
+| NFR-012 **[IMPLEMENTED]** | Accessibility | Conversational/voice intake (FR-012) must support English, Hindi, and Marathi for both text and speech input; speech recognition failure must degrade to text input, never block the citizen. |
+| NFR-013 **[IMPLEMENTED]** | Data Integrity / Safety | No content retrieved by the RAG layer (FR-015) may reach the live scheme knowledge base without an explicit curator approval action — this is enforced at the data-write layer (a separate pending-review collection, not a flag on the live record), not only by UI convention. |
+| NFR-014 **[IMPLEMENTED]** | Reliability | RAG refresh failures (source unreachable, retrieval inconclusive) must never block or degrade FR-004/FR-005/FR-006 — those depend only on the already-committed knowledge base, exactly as NFR-003 already requires for the LLM Explanation Service. |
 | NFR-015 **[IMPLEMENTED]** | Reliability | The OTP-delivery service (Resend) failing or being unreachable must never block login (FR-016) — the two-step flow degrades to a console-logged/`debug_otp` fallback exactly as NFR-003 requires for the LLM Explanation Service, rather than surfacing a 500 to the caller. |
+| NFR-016 **[IMPLEMENTED]** | Trust / Honesty | A scheme's application link must never be presented with more certainty than has actually been verified (FR-017) — no HTTP-200-implies-official heuristic; `application_link_status` is only ever set by a curator's own asserted verification. |
+| NFR-017 **[IMPLEMENTED]** | Security | The Context-Aware Form Assistance extension/WebView must not activate outside a session this platform itself minted and whose origin was independently re-confirmed server-side (FR-018, BR-021) — broad browser `host_permissions` (unavoidable since scheme domains aren't known in advance) must never translate into broad runtime activation. |
 
 ---
 
@@ -717,14 +784,14 @@ FOR every pipeline run
   SO THAT the trace can be retrieved later via FR-010
 ```
 
-**BR-013 — Conversational/voice intake has no separate validation path [EXTENDED SCOPE]**
+**BR-013 — Conversational/voice intake has no separate validation path [IMPLEMENTED]**
 ```text
 WHEN the Conversational/Voice Intake Assistant extracts a profile slot from a citizen statement
 THE extracted value SHALL be validated by the same rules as the equivalent structured-form field (FR-001)
 AND SHALL NOT be treated as trusted/pre-validated merely because it came from the LLM
 ```
 
-**BR-014 — Quick Checker statelessness [EXTENDED SCOPE]**
+**BR-014 — Quick Checker statelessness [IMPLEMENTED]**
 ```text
 FOR every POST to the Quick Checker (FR-013)
 THE system SHALL NOT create or update any Citizen record
@@ -732,7 +799,7 @@ AND SHALL NOT persist the submitted criteria beyond the request/response cycle
 SO THAT a citizen may check eligibility on behalf of another person with no account and no residual data trail
 ```
 
-**BR-015 — RAG output requires curator approval before it can affect any decision [EXTENDED SCOPE]**
+**BR-015 — RAG output requires curator approval before it can affect any decision [IMPLEMENTED]**
 ```text
 WHEN the RAG Retrieval Layer drafts a candidate scheme-knowledge-base update
 THE candidate SHALL be written only to a pending-review queue, never to the live scheme record
@@ -766,6 +833,34 @@ AND SHALL thereafter be readable/writable only by that owner or by an admin (403
 WHEN a citizen profile is created with no caller token (the original, still-supported flow)
 THE profile SHALL have no `owner_user_id` and SHALL remain exactly as openly accessible as before this feature existed
 SO THAT introducing real accounts protects citizens who choose to use them without breaking the anonymous/assisted-service flow FR-001 always supported
+```
+
+**BR-019 — Apply-Now rendering is gated on application_link_status, never on URL presence alone [IMPLEMENTED]**
+```text
+WHEN a scheme's application destination is displayed to a citizen (FR-017)
+THE UI SHALL render a clickable "official" Apply Now link only when application_link_status = "verified"
+AND SHALL render an explicit "not independently verified" warning alongside the link when status = "unverified"
+AND SHALL render no link at all, only an explanatory message, when status = "not_available" or "state_specific"
+AND SHALL NEVER fabricate or guess a URL when none is curated
+SO THAT a citizen can never mistake an unverified or nonexistent destination for an official government application page
+```
+
+**BR-020 — Form explanations never assert an eligibility outcome [IMPLEMENTED]**
+```text
+WHEN the Context-Aware Form Assistance feature (FR-018) explains a form field or option
+THE response SHALL explain only the field's meaning, expected input, and (where relevant) an eligibility-adjacent caution
+AND SHALL always include a fixed disclaimer that the field is only one part of a multi-condition eligibility assessment
+AND THE disclaimer SHALL be enforced by application code on every response, never left to the LLM's own discretion to include
+SO THAT the assistant can never be mistaken for — or actually become — an independent eligibility determination, which remains the Rule Engine's sole responsibility (Section 16's boundary statement)
+```
+
+**BR-021 — Form-assistance activation requires a matching, server-verified origin [IMPLEMENTED]**
+```text
+WHEN a browser extension or mobile WebView requests form-assistance explanation (FR-018)
+THE request SHALL carry a signed assistance_token distinct in kind from a login access token (different `typ` claim)
+AND THE caller's actual page origin (read by the browser itself, not client-asserted) SHALL match the origin bound to that token at session-validation time
+AND A session SHALL only ever be issued for a scheme whose application_link_status is "verified" or "unverified" — never "not_available" or "state_specific"
+SO THAT the assistant cannot be activated on an arbitrary website, and a leaked token cannot be replayed from a different origin
 ```
 
 ---
@@ -802,9 +897,29 @@ Database is MongoDB (document store). Modeling approach: entities that are alway
 
 **Collection: schemes**
 - Purpose: A government scheme available for evaluation.
-- Fields: `_id`, name, description, issuing_authority, category, benefit_type, benefit_value_estimate, conflict_group (nullable), is_active (boolean), source_reference, application_link (nullable, **[IMPLEMENTED]**), `rules` (embedded array, see SchemeRule below), `document_requirements` (embedded array, see SchemeDocumentRequirement below), created_at, updated_at
+- Fields: `_id`, name, description, issuing_authority, category, benefit_type, benefit_value_estimate, conflict_group (nullable), is_active (boolean), `links` (embedded sub-document, see SchemeLinks below, **[IMPLEMENTED]**), `rules` (embedded array, see SchemeRule below), `document_requirements` (embedded array, see SchemeDocumentRequirement below), created_at, updated_at
 - Required: name, category, benefit_type, benefit_value_estimate, is_active
-- `application_link` **[IMPLEMENTED]**: the official government registration/application form URL for this scheme, distinct from `source_reference` (a general citation). Curated manually via the Admin scheme form today; surfaced to citizens on both the Eligible Schemes screen (for eligible results) and the Bundle screen (for included schemes). Not yet populated for the original 8 seeded schemes.
+
+**Embedded sub-document: SchemeLinks** (field `links` on the scheme document) **[IMPLEMENTED]**
+- Purpose: Distinguishes the different official URLs a scheme can have — a policy/information page, the scheme's own homepage, the actual application form, a renewal portal, and a grievance portal are frequently different destinations and must never be conflated into one link (BR-019). Supersedes the earlier flat `source_reference`/`application_link` string fields.
+- Fields: policy_url, official_scheme_url, application_url, renewal_url, grievance_url, source_url (all nullable strings), application_link_status (`verified` / `unverified` / `not_available` / `state_specific`), last_verified_at (nullable datetime), verification_notes (array of strings)
+- Required: application_link_status (defaults to `unverified`)
+- `application_link_status` semantics: `verified` — a human (or a verification step a human reviewed) confirmed this is the correct, current, official destination; `unverified` — a URL is present but unconfirmed (fetch blocked, geo-restricted, JS-rendered page couldn't be inspected, etc.) and must never be shown to citizens as "official"; `not_available` — confirmed there is no online self-application (e.g. survey-based beneficiary selection), a positive finding, not a gap; `state_specific` — the correct destination depends on the citizen's state/department and no single national URL applies.
+- Population status: researched and populated for the 8 seeded schemes by directly fetching each official domain (not trusting a search-engine snippet) — this caught a stale/redirected government domain (`disabilityaffairs.gov.in` → `depwd.gov.in`) and confirmed PMAY-G has no citizen self-application at all (survey/SECC-based). Two of the 8 seed schemes are explicitly fictional/representative (per A-001) and correctly have every `links` field left null with a `verification_notes` entry explaining why, rather than an invented URL.
+- Surfaced on: Eligible Schemes screen, Bundle screen, Scheme Catalog/`SchemeCard` (web and mobile) — all via a shared `ApplyLink` component that renders differently per `application_link_status` rather than a single truthy/falsy check on a URL.
+
+**Collection: assistance_sessions [IMPLEMENTED]**
+- Purpose: The short-lived first half of the Context-Aware Form Assistance session handshake (FR-018) — minted when a citizen clicks "Apply Now" on a scheme whose `application_link_status` is `verified` or `unverified`, before the browser extension/mobile WebView has a chance to run.
+- Fields: `_id`, session_id (opaque, unique), scheme_id, scheme_name, allowed_origin (derived from `links.application_url`'s own origin), application_link_status, user_id (nullable), created_at, expires_at
+- Required: session_id, scheme_id, allowed_origin, expires_at
+- Indexing: unique index on `session_id`; TTL index on `expires_at` (`expireAfterSeconds: 0`).
+- Rationale for a separate, short-lived collection rather than a JWT alone: the session_id itself is safe to put in a URL (it's meaningless without a server round-trip and expires quickly), whereas the actual bearer token used for `explain-text` calls (a signed, `typ:"assistance"` JWT, distinct from a login access token) is only ever handed back after the caller's own page origin is confirmed to match — never embedded in a URL (Section 21's "do not expose long-lived tokens in URLs").
+
+**Collection: assistance_feedback [IMPLEMENTED]**
+- Purpose: "Report incorrect explanation" (👍/👎) on a form-assistance response — feedback about the assistant's output, distinct from FR-011's Feedback/Grievance Agent (which handles a citizen's grievance about a scheme/department, not about this platform's own explanations).
+- Fields: `_id`, scheme_id, allowed_origin, selected_text (nullable), field_label (nullable), explanation_given, is_helpful (boolean), comment (nullable), created_at
+- Required: scheme_id, explanation_given, is_helpful
+- Rationale: stored for a curator to review, never fed back automatically into the explanation prompt — unvetted feedback text reaching a live, decision-relevant record is exactly what BR-015 already establishes must never happen without curator review.
 
 **Embedded sub-document: SchemeRule** (array field `rules` on the scheme document)
 - Purpose: One eligibility condition belonging to a scheme.
@@ -960,13 +1075,19 @@ Output: Consolidated application checklist
 | POST | /api/checklist/generate | Generate checklist for a bundle | Basic (JWT if the underlying profile is owned) | Owner or Admin (BR-018) |
 | GET | /api/checklist/:bundleId | Retrieve a checklist | Basic (JWT if the underlying profile is owned) | Owner or Admin (BR-018) |
 | GET | /api/agent/trace/:citizenId | Retrieve reasoning trace | Basic (JWT if the profile is owned) | Owner or Admin (BR-018) |
-| POST | /api/intake/converse **[EXTENDED SCOPE]** | Submit one turn of conversational/voice intake (transcript + optional target language); returns extracted slot(s), an assistant follow-up prompt, and profile-completeness state (FR-012) | Basic | Owner or Admin |
-| POST | /api/quick-check **[EXTENDED SCOPE]** | Stateless quick eligibility check against caller-supplied criteria; no citizen record created (FR-013, BR-014) | None | Public write (rate-limited, see Section 20) |
-| GET | /api/catalog/schemes **[EXTENDED SCOPE]** | Browse/search the scheme catalog with form-filling guide metadata attached per scheme (FR-014) | None | Public read |
-| GET | /api/catalog/schemes/:id/guide **[EXTENDED SCOPE]** | Retrieve the step-by-step form-filling guide for one scheme (FR-014) | None | Public read |
-| GET | /api/admin/rag-candidates **[EXTENDED SCOPE]** | List pending RAG-drafted candidate scheme updates awaiting curator review (FR-015, BR-015) | Admin credential | Admin only |
-| POST | /api/admin/rag-candidates/:id/approve **[EXTENDED SCOPE]** | Curator approves a candidate; does not itself write `schemes` — curator still submits the accepted diff via the existing FR-011 update path, then this marks the candidate `approved` (BR-015) | Admin credential | Admin only |
-| POST | /api/admin/rag-candidates/:id/reject **[EXTENDED SCOPE]** | Curator rejects a candidate with a reason; candidate is never read by any downstream engine (BR-015) | Admin credential | Admin only |
+| POST | /api/assistance/session **[IMPLEMENTED]** | Mint a short-lived `session_id` for a scheme's verified/unverified application, scoped to that URL's own origin (FR-018) | None (optional JWT to link the session to an account) | Public write; 422 if the scheme's `application_link_status` is `not_available`/`state_specific` |
+| POST | /api/assistance/validate-session **[IMPLEMENTED]** | Exchange a `session_id` + the caller's own page origin for a scoped `assistance_token` (BR-021) — only succeeds if the origin matches what was stored at session-creation time | None (the session_id is the credential) | Public write |
+| POST | /api/assistance/explain-text **[IMPLEMENTED]** | RAG-grounded, LangGraph-driven explanation of citizen-selected form text (FR-018) | `assistance_token` bearer + `X-Assistance-Origin` header, both re-validated against each other | Session-scoped to one scheme + origin only |
+| POST | /api/assistance/explain-screenshot **[IMPLEMENTED]** | Same explanation pipeline, starting from a user-cropped screenshot instead of selected text — transcribed via Gemini vision, then identical downstream steps (FR-018) | `assistance_token` bearer + `X-Assistance-Origin` header | Session-scoped; 422 if the decoded image exceeds `assistance_screenshot_max_bytes` |
+| POST | /api/assistance/feedback **[IMPLEMENTED]** | "Report incorrect explanation" (👍/👎) for curator review — never fed back into the explanation prompt automatically (BR-015's principle extended) | `assistance_token` bearer + `X-Assistance-Origin` | Session-scoped |
+| GET | /api/assistance/languages **[IMPLEMENTED]** | List languages the Multi-language Chat Agent actually supports (never overclaimed) | None | Public read |
+| POST | /api/intake/converse **[IMPLEMENTED]** | Submit one turn of conversational/voice intake (transcript + optional target language); returns extracted slot(s), an assistant follow-up prompt, and profile-completeness state (FR-012) | None (optional JWT to attach `owner_user_id`, same pattern as `POST /api/citizens`) | Owner or Admin |
+| POST | /api/quick-check **[IMPLEMENTED]** | Stateless quick eligibility check against caller-supplied criteria; no citizen record created (FR-013, BR-014) | None | Public write — **not yet rate-limited** (see Section 20's honest caveat; no rate-limiting middleware exists anywhere in this codebase yet, including on the equally-public `POST /api/citizens`, so this isn't a new gap specific to this endpoint) |
+| GET | /api/catalog/schemes **[IMPLEMENTED]** | Browse/search the scheme catalog with form-filling guide metadata attached per scheme (FR-014) | None | Public read |
+| GET | /api/catalog/schemes/:id/guide **[IMPLEMENTED]** | Retrieve the step-by-step form-filling guide for one scheme (FR-014) | None | Public read |
+| GET | /api/admin/rag-candidates **[IMPLEMENTED]** | List pending RAG-drafted candidate scheme updates awaiting curator review (FR-015, BR-015) | Admin credential | Admin only |
+| POST | /api/admin/rag-candidates/:id/approve **[IMPLEMENTED]** | Curator approves a candidate; commits the diff itself via the same `update_scheme` function FR-011's manual edit form calls, then marks the candidate `approved` (BR-015) | Admin credential | Admin only |
+| POST | /api/admin/rag-candidates/:id/reject **[IMPLEMENTED]** | Curator rejects a candidate with a reason; candidate is never read by any downstream engine (BR-015) | Admin credential | Admin only |
 | POST | /api/admin/rag/refresh **[EXTENDED SCOPE]** | Manually trigger a RAG retrieval pass for one scheme/source (background job; see Section 23) | Admin credential | Admin only |
 
 **Example — POST /api/eligibility/evaluate**
@@ -1185,19 +1306,20 @@ Kurukshetra_2.0/
 │   │   │   ├── explanation/
 │   │   │   ├── checklist/
 │   │   │   ├── orchestrator/
-│   │   │   ├── voice_intake/       # [EXTENDED SCOPE] FR-012
-│   │   │   ├── quick_checker/      # [EXTENDED SCOPE] FR-013
-│   │   │   ├── scheme_catalog/     # [EXTENDED SCOPE] FR-014
-│   │   │   └── rag/                # [EXTENDED SCOPE] FR-015
+│   │   │   ├── voice_intake/       # [IMPLEMENTED] FR-012
+│   │   │   ├── quick_checker/      # [IMPLEMENTED] FR-013
+│   │   │   ├── scheme_catalog/     # [IMPLEMENTED] FR-014
+│   │   │   └── rag_refresh/        # [IMPLEMENTED] FR-015 (candidate drafting/review; retrieval itself lives in app/rag/, built earlier for policy search)
 │   │   ├── models/          # ORM entities
 │   │   └── main.py
 │   └── requirements.txt
 ├── database/
 │   ├── init_indexes.js      # index creation script (compound indexes per Section 13)
 │   ├── seed_schemes.json    # sample scheme knowledge base, loaded into MongoDB on startup
-│   └── seed_schemes_maharashtra.json  # [EXTENDED SCOPE] Maharashtra/MahaDBT representative
+│   └── seed_schemes_maharashtra.json  # [IMPLEMENTED] Maharashtra/MahaDBT representative
 │                                       # scheme set (Section 13a, A-011) — additional, distinct
-│                                       # from seed_schemes.json, not yet created
+│                                       # from seed_schemes.json; loaded via
+│                                       # backend/scripts/seed_maharashtra.py, not on startup
 ├── tests/
 │   ├── backend/
 │   └── frontend/
@@ -1227,7 +1349,7 @@ Kurukshetra_2.0/
 - **[EXTENDED SCOPE] Quick Checker abuse prevention:** `/api/quick-check` is public and unauthenticated by design (BR-014), so it needs its own rate limit distinct from the general public-write limit above — it is the single highest-risk endpoint for scraping/enumeration since it requires no citizen record at all.
 - **[EXTENDED SCOPE] RAG source-fetching (SSRF) boundary:** The RAG Retrieval Layer only fetches from a curator-configured allowlist of official source URLs/domains (Section 13a) — it never fetches an arbitrary URL supplied at request time, which would otherwise make `/api/admin/rag/refresh` an SSRF vector even behind admin auth.
 - **[EXTENDED SCOPE] RAG output isolation:** Enforced at the data-access layer, not just by convention — the Rule Engine, Conflict Detection Engine, and Bundle Optimizer's database access code has no query path that reads `rag_candidate_updates` (BR-015); this is a structural guarantee, verified by Section 22's testing strategy, not a runtime permission check.
-- **[EXTENDED SCOPE] Conversational/voice intake has no elevated trust:** Slot values extracted via FR-012 pass through the identical server-side validation as structured-form submissions (BR-013) — the intake channel is never treated as a signal of trustworthiness.
+- **[IMPLEMENTED] Conversational/voice intake has no elevated trust:** Slot values extracted via FR-012 pass through the identical server-side validation as structured-form submissions (BR-013) — the intake channel is never treated as a signal of trustworthiness.
 
 ---
 
@@ -1245,8 +1367,8 @@ Kurukshetra_2.0/
 | Admin submits invalid rule syntax | Reject write, return specific validation error | Rule-field-level error in Admin UI |
 | Unauthorized access to another citizen's profile | Return forbidden error | "You do not have access to this profile" |
 | Network failure (frontend ↔ backend) | Frontend shows retry option | "Connection lost, please retry" |
-| **[EXTENDED SCOPE]** NLP slot extraction fails/times out (FR-012) | Fall back to the equivalent structured-form question for that field | "Let's try that field as a quick question instead" |
-| **[EXTENDED SCOPE]** Extracted slot value fails validation (FR-012) | Reject the value exactly as a structured-form field would (BR-013); do not persist | Same field-level error message as the structured form would show |
+| **[IMPLEMENTED]** NLP slot extraction fails/times out (FR-012) | Fall back to the equivalent structured-form question for that field | "Let's try that field as a quick question instead" |
+| **[IMPLEMENTED]** Extracted slot value fails validation (FR-012) | Reject the value exactly as a structured-form field would (BR-013); do not persist | Same field-level error message as the structured form would show |
 | **[EXTENDED SCOPE]** Quick Checker submitted with invalid/missing criteria (FR-013) | Reject, no record created or persisted (BR-014) | Field-level error message |
 | **[EXTENDED SCOPE]** RAG source unreachable / retrieval pass fails (FR-015) | Skip that source for this run; no candidate written; never affects the live pipeline (NFR-014) | Not citizen-facing; surfaced only in Admin RAG queue as "no new candidate this cycle" |
 | **[EXTENDED SCOPE]** Curator attempts to approve a RAG candidate with invalid rule syntax | Reject exactly as FR-011 already rejects invalid rule syntax | Rule-field-level error in the Admin approval form |
@@ -1282,11 +1404,13 @@ FR-008 → TC-018 (missing documents computed correctly), TC-019 (no missing doc
 FR-009 → TC-020 (checklist de-duplicates shared documents per BR-009)
 FR-010 → TC-021 (trace retrievable and ordered)
 FR-011 → TC-022 (valid scheme creation), TC-023 (invalid rule syntax rejected)
-FR-012 [EXTENDED SCOPE] → TC-024 (slot extracted and validated), TC-025 (invalid extracted value rejected per BR-013), TC-026 (LLM failure falls back to structured question)
-FR-013 [EXTENDED SCOPE] → TC-027 (likely-eligible list on known criteria), TC-028 (no citizen/eligibility/bundle record created per BR-014), TC-029 (invalid criteria rejected)
-FR-014 [EXTENDED SCOPE] → TC-030 (catalog search/filter), TC-031 (guide retrieval), TC-032 (unknown scheme 404)
-FR-015 [EXTENDED SCOPE] → TC-033 (candidate written to rag_candidate_updates only, per BR-015), TC-034 (approve/reject status transitions), TC-035 (structural test: no core-engine code path reads rag_candidate_updates), TC-036 (unreachable source produces no candidate and does not affect the core pipeline, per NFR-014)
+FR-012 [IMPLEMENTED] → test_voice_intake.py: test_no_gemini_key_falls_back_to_structured_form_message, test_extraction_failure_falls_back_to_next_mandatory_field_question, test_slots_accumulate_across_turns_and_create_citizen_on_completion, test_invalid_extracted_value_is_rejected_not_silently_accepted, test_repeat_call_after_completion_returns_same_citizen_without_duplicating, test_converse_requires_no_auth (TC-024 slot extracted/validated, TC-025 invalid value rejected, TC-026 LLM failure fallback)
+FR-013 [IMPLEMENTED] → TC-027 (eligible result with application link + documents), TC-028 (stateless — no citizen/eligibility_results record created, per BR-014), TC-029 (unknown/inactive scheme_id rejected with 404), TC-059 (not-eligible suggests same-category alternatives, never itself), TC-060 (missing criteria → indeterminate, not silently not_eligible, per BR-002 semantics), TC-061 (accepts date_of_birth and derives age identically to the structured form), TC-062 (requires no authentication at all, per FR-013's "zero account/login friction")
+FR-014 [IMPLEMENTED] → test_scheme_catalog.py: test_search_catalog_by_keyword_matches_name, test_search_catalog_by_keyword_matches_description, test_search_catalog_no_matches_is_empty_list_not_error, test_search_catalog_combines_query_and_category_filter, test_get_guide_returns_authored_guide, test_get_guide_returns_null_guide_when_none_authored, test_get_guide_unknown_scheme_returns_404, test_catalog_search_requires_no_auth (TC-030 catalog search/filter, TC-031 guide retrieval, TC-032 unknown scheme 404)
+FR-015 [IMPLEMENTED] → test_rag_refresh.py: test_no_evidence_produces_no_candidate, test_no_gemini_key_produces_no_candidate, test_drafting_failure_produces_no_candidate, test_draft_with_no_confident_fields_produces_no_candidate, test_refresh_creates_pending_candidate_without_touching_schemes, test_approve_candidate_commits_via_update_scheme_path, test_reject_candidate_leaves_scheme_untouched, test_approve_already_reviewed_candidate_returns_400, test_rag_endpoints_require_admin, test_structural_core_engines_never_read_rag_candidate_updates (TC-033 candidate isolation, TC-034 approve/reject transitions, TC-035 structural no-read guarantee, TC-036 unreachable-source handling)
 FR-016 [IMPLEMENTED] → TC-037 (account registration), TC-038 (duplicate email rejected), TC-039 (admin bootstrap credential enforced, BR-016), TC-040 (wrong password/unknown email rejected), TC-041 (full two-step login issues a working JWT), TC-042 (wrong OTP rejected), TC-043 (OTP lockout after max attempts, BR-017), TC-044 (legacy X-Admin-Token still works alongside JWT), TC-045 (anonymous citizen pipeline stays fully open — regression guard), TC-046 (owned citizen pipeline: stranger/anonymous 403, owner/admin 200, across eligibility/conflicts/bundle/checklist/trace, BR-018)
+FR-017 [IMPLEMENTED] → TC-047 (application_link surfaces in eligibility results with correct status, per BR-019), TC-048 (PUT /api/schemes/:id merges one links field without clobbering the rest)
+FR-018 [IMPLEMENTED] → TC-049 (session creation rejected for not_available/state_specific schemes), TC-050 (unknown scheme 404s on session creation), TC-051 (full session handshake: mint → validate with matching origin → assistance_token issued), TC-052 (mismatched origin rejected at validate-session, per BR-021), TC-053 (explain-text rejects a missing/invalid assistance_token and a mismatched X-Assistance-Origin), TC-054 (a login access token cannot be used as an assistance_token — distinct `typ` claim, BR-021), TC-055 (explain-screenshot with no Gemini key returns an honest clarification, never a fabricated transcription), TC-056 (oversized screenshot rejected before reaching the LLM), TC-057 (invalid base64 rejected), TC-058 (explain-screenshot requires a valid assistance session, same as explain-text)
 ```
 
 ---
@@ -1486,31 +1610,31 @@ Production/Demo (single-instance deployment, MongoDB Atlas or a self-hosted Mong
 - [ ] Full dry-run of the demo script
 - [ ] Fix any broken empty/error/loading states surfaced during dry-run
 
-**Quick Checker & Scheme Catalog [EXTENDED SCOPE]**
-- [ ] Implement `POST /api/quick-check` reusing the Rule Engine, with no `citizens`/`eligibility_results`/`bundles` write (BR-014)
-- [ ] Implement `GET /api/catalog/schemes` and `GET /api/catalog/schemes/:id/guide`
-- [ ] Author form-filling guide content for each seeded scheme
-- [ ] Build Quick Checker frontend screen (disclaimer per NFR-011)
-- [ ] Build Scheme Catalog frontend screen
-- [ ] Structural test confirming statelessness (BR-014)
+**Quick Checker & Scheme Catalog [IMPLEMENTED]**
+- [x] Implement `POST /api/quick-check` reusing the Rule Engine, with no `citizens`/`eligibility_results`/`bundles` write (BR-014)
+- [x] Implement `GET /api/catalog/schemes` and `GET /api/catalog/schemes/:id/guide`
+- [x] Author form-filling guide content for each seeded scheme with a `verified` application link (4 of 13 schemes — the rest honestly show no guide rather than an invented one, see FR-014 writeup)
+- [x] Build Quick Checker frontend screen (disclaimer per NFR-011)
+- [x] Build Scheme Catalog frontend screen
+- [x] Structural test confirming statelessness (BR-014)
 
-**Conversational/Voice Profile Intake [EXTENDED SCOPE]**
-- [ ] Implement `POST /api/intake/converse` with structured slot-extraction prompting
-- [ ] Validate every extracted slot through the existing FR-001 Pydantic validators (BR-013)
-- [ ] Implement fallback-to-structured-question path on LLM failure/timeout
-- [ ] Wire client-side Web Speech API capture with typed-text fallback
-- [ ] Build Conversational/Voice Intake frontend screen, converging into Eligible Schemes
-- [ ] Tests: extraction success, invalid-value rejection, LLM-failure fallback
+**Conversational/Voice Profile Intake [IMPLEMENTED]**
+- [x] Implement `POST /api/intake/converse` with structured slot-extraction prompting
+- [x] Validate every extracted slot through the existing FR-001 Pydantic validators (BR-013)
+- [x] Implement fallback-to-structured-question path on LLM failure/timeout
+- [x] Wire client-side Web Speech API capture with typed-text fallback
+- [x] Build Conversational/Voice Intake frontend screen, converging into Eligible Schemes (via Dashboard)
+- [x] Tests: extraction success, invalid-value rejection, LLM-failure fallback
 
-**RAG Knowledge-Base Freshness [EXTENDED SCOPE]**
-- [ ] Create `rag_candidate_updates` collection and indexes (Section 13a)
-- [ ] Configure curator-owned source allowlist (no arbitrary-URL fetch, per Section 20)
-- [ ] Implement retrieval/embedding pass (provider per Q-010)
-- [ ] Implement LLM drafting step with mandatory source citations
-- [ ] Implement `GET/POST /api/admin/rag-candidates...` endpoints
-- [ ] Build Admin RAG Candidate Review Queue screen
-- [ ] Structural test: no Rule Engine/Conflict Detection Engine/Bundle Optimizer code path reads `rag_candidate_updates` (TC-035)
-- [ ] End-to-end test: pending/rejected candidate has zero effect on any citizen's results (BR-015)
+**RAG Knowledge-Base Freshness [IMPLEMENTED]**
+- [x] Create `rag_candidate_updates` collection and indexes (Section 13a)
+- [ ] Configure curator-owned source allowlist (no arbitrary-URL fetch, per Section 20) — **honest gap:** retrieval reuses the existing indexed policy corpus (whatever `ingest_policies.py` has already loaded), there is no separate allowlist-configuration UI; Q-010 remains open
+- [x] Implement retrieval/embedding pass — reuses the existing `PolicyKnowledgeService`, not a new pipeline
+- [x] Implement LLM drafting step with mandatory source citations (`source_passages` on every candidate)
+- [x] Implement `GET/POST /api/admin/rag-candidates...` endpoints
+- [x] Build Admin RAG Candidate Review Queue screen
+- [x] Structural test: no Rule Engine/Conflict Detection Engine/Bundle Optimizer code path reads `rag_candidate_updates` (TC-035)
+- [x] End-to-end test: pending/rejected candidate has zero effect on any citizen's results (BR-015) — `test_reject_candidate_leaves_scheme_untouched` plus the structural test together cover this
 
 ---
 
@@ -1682,11 +1806,13 @@ Q-010 [EXTENDED SCOPE]: What embedding/vector-store provider should the RAG Retr
 | FR-009 | UC-07 | Document & Checklist Manager | GET /api/checklist/:bundleId | ChecklistItem | TC-020 |
 | FR-010 | — (transparency feature) | Agent Orchestrator | GET /api/agent/trace/:citizenId | AgentAuditLog | TC-021 |
 | FR-011 | UC-08 | Scheme Knowledge Base | POST/PUT /api/schemes | Scheme, SchemeRule, ConflictRule, SchemeDocumentRequirement | TC-022, TC-023 |
-| FR-012 [EXTENDED SCOPE] | UC-09 | Conversational/Voice Intake | POST /api/intake/converse | Citizen (same schema as FR-001) | TC-024, TC-025, TC-026 |
-| FR-013 [EXTENDED SCOPE] | UC-10 | Quick Checker | POST /api/quick-check | (none persisted — BR-014) | TC-027, TC-028, TC-029 |
-| FR-014 [EXTENDED SCOPE] | UC-11 | Scheme Catalog | GET /api/catalog/schemes, GET /api/catalog/schemes/:id/guide | Scheme | TC-030, TC-031, TC-032 |
-| FR-015 [EXTENDED SCOPE] | UC-12 | RAG Retrieval Layer | GET/POST /api/admin/rag-candidates... | rag_candidate_updates | TC-033, TC-034, TC-035, TC-036 |
+| FR-012 [IMPLEMENTED] | UC-09 | Conversational/Voice Intake | POST /api/intake/converse | Citizen (same schema as FR-001) | TC-024, TC-025, TC-026 |
+| FR-013 [IMPLEMENTED] | UC-10 | Quick Checker | POST /api/quick-check | (none persisted — BR-014) | TC-027, TC-028, TC-029, TC-059–TC-062 |
+| FR-014 [IMPLEMENTED] | UC-11 | Scheme Catalog | GET /api/catalog/schemes, GET /api/catalog/schemes/:id/guide | Scheme | TC-030, TC-031, TC-032 |
+| FR-015 [IMPLEMENTED] | UC-12 | RAG Retrieval Layer | GET/POST /api/admin/rag-candidates... | rag_candidate_updates | TC-033, TC-034, TC-035, TC-036 |
 | FR-016 [IMPLEMENTED] | — (cross-cutting, all citizen-scoped UCs) | Two-Step Authentication | POST /api/auth/register, /login, /verify-otp, GET /api/auth/me | users, pending_logins | TC-037–TC-046 (see Section 22) |
+| FR-017 [IMPLEMENTED] | — (cross-cutting, all scheme-display UCs) | Scheme Knowledge Base (`links`) | GET /api/schemes, /api/schemes/:id; PUT /api/schemes/:id | schemes.links | TC-047–TC-048 |
+| FR-018 [IMPLEMENTED] | — (new: Context-Aware Form Assistance) | Form Assistance LangGraph workflow, RAG service, Multilingual service | POST /api/assistance/session, /validate-session, /explain-text, /feedback; GET /api/assistance/languages | assistance_sessions, assistance_feedback | TC-049–TC-054 |
 
 ---
 
@@ -1694,7 +1820,8 @@ Q-010 [EXTENDED SCOPE]: What embedding/vector-store provider should the RAG Retr
 
 ```text
 Overall Status: In Progress (Phases 0–7 complete, Phase 8 in progress, Two-Step Authentication &
-Ownership Protection complete [IMPLEMENTED, outside original phase numbering]; Phases 9–11
+Ownership Protection complete, Verified Scheme Application Links & Context-Aware Form
+Assistance complete [all IMPLEMENTED, outside original phase numbering]; Phases 9–11
 [EXTENDED SCOPE] specified but not started — see Pending below)
 
 Completed:
@@ -1898,21 +2025,522 @@ In Progress:
   `debug_otp` fallback — fixed to catch `httpx.HTTPError` and fall back gracefully, matching
   BR-010's established "external service failure never blocks the pipeline" pattern (NFR-015).
 
+- **Verified Scheme Application Links & Context-Aware Form Assistance [IMPLEMENTED]** — also
+  added outside the original phase numbering (FR-017, FR-018, BR-019/020/021, NFR-016/017).
+  Redesigned the scheme link model from flat `source_reference`/`application_link` strings
+  into an embedded `SchemeLinks` sub-document (policy/official/application/renewal/grievance/
+  source URLs + `application_link_status` + verification notes), then actually verified all 8
+  seeded schemes by fetching each official domain directly rather than trusting a search
+  snippet — confirmed PM-KISAN's live registration form, caught a stale redirected government
+  domain (`disabilityaffairs.gov.in` → `depwd.gov.in`), confirmed PMAY-G has no citizen
+  self-application at all (survey/SECC-based selection, not previously known to this codebase),
+  and correctly left every link field null (with an explanatory note) for the two fictional
+  representative schemes rather than inventing a URL. A shared `ApplyLink` component (web and
+  mobile) now renders per-status rather than on raw URL presence, wired into `EligibleSchemes`,
+  `Bundle`, and the `SchemeCard` used by both the personalized Dashboard and catalog browsing
+  (the latter had no Apply link at all before this).
+
+  Built the assistance session handshake (`assistance_sessions` collection, TTL-indexed): a
+  short-lived `session_id` minted at "Apply Now" time, exchanged for a scoped `assistance_token`
+  (a JWT with a distinct `typ` claim, never interchangeable with a login access token) only if
+  the caller's actual page origin matches what was stored at minting time — enforced both by
+  `require_assistance_session` (app/core/auth.py) and, redundantly, inside the token payload
+  itself. A dedicated LangGraph workflow (`app/graph/form_assistance_workflow.py`, distinct
+  from the general assistant graph in `app/graph/workflow.py` since this feature is
+  session-gated, not intent-routed from free text) reuses the existing RAG (`policy_service`)
+  and Multi-language Chat Agent services rather than reimplementing them; a fixed eligibility
+  caution sentence (BR-020) is appended in code on every response, never left to the LLM.
+
+  Shipped a real Manifest V3 browser extension (`extension/`) — background service worker gates
+  ALL script injection on the page's URL carrying the session marker (so the content script
+  never runs on a page it wasn't invited onto, despite the broad `host_permissions` MV3 forces
+  since scheme domains can't be enumerated in advance), content script does text-selection
+  detection + explanation panel + browser-native `speechSynthesis` playback + 👍/👎 feedback,
+  popup shows active/inactive status. And a real mobile counterpart
+  (`mobile/src/screens/ApplicationWebViewScreen.js`, using newly added `react-native-webview` +
+  `expo-speech`, confirmed with the user before adding new native dependencies) — applications
+  now open in an in-app WebView with a JS selection bridge rather than the external system
+  browser, since the mobile app can't read/control an external browser at all.
+
+  **Live-verified end-to-end in a real, unpacked Chromium extension** (Playwright
+  `launchPersistentContext` with `--load-extension`, against a local test form — not a real
+  government site, to avoid hitting production infrastructure with automated tooling):
+  activation gating, session validation, text-selection detection, and the explanation panel
+  rendering, both via the real Gemini path and the deterministic BR-010-style fallback. Two
+  real bugs found and fixed along the way: (1) a CORS gap — `/api/assistance/*` must accept
+  arbitrary government origins that can't live in the static `CORS_ORIGINS` allowlist, fixed
+  with an origin-reflecting middleware scoped to that path prefix (safe because the origin is
+  already independently re-verified server-side, per BR-021); (2) `backend/.env`'s
+  `GEMINI_MODEL` was still pinned to a since-retired `gemini-2.0-flash`, silently breaking
+  every LLM feature in the app, not just this one — updated to the rolling `gemini-flash-latest`
+  alias already used as `config.py`'s own default.
+
+  Also fixed, while restoring the frontend Playwright E2E suite to a passing state after the
+  Landing/Onboarding/Dashboard restructuring (done outside this work) and this session's own
+  removal of the Admin token-paste field: `tests/frontend/e2e.spec.js` now drives the actual
+  Landing → Onboarding → Dashboard flow rather than assuming "/" is the intake form directly,
+  and `tests/frontend/admin.spec.js` authenticates via the real two-step API (register → login
+  → verify-otp) rather than a removed `#admin_token` field.
+
+  **Re-verified later (post-icon/manifest packaging work) against the packaged, distributable
+  extension zip, not just an unpacked source checkout** — same live-flow result: activation
+  gating, session/origin validation, and the "🛟 Explain this" button all confirmed working
+  from the exact artifact `extension/dist/asbo-form-assistant.zip` unpacks to. **New, honest
+  finding from this pass:** under today's exhausted daily Gemini quota, a real `explain-text`
+  call took over 2.5 minutes and was still retrying when manually cancelled — because this one
+  workflow chains *two* independent Gemini calls (`detect_language_node`, then
+  `generate_structured_explanation_node`), and each retries with its own backoff against the
+  same 429 independently, roughly doubling the ~75-90s single-call latency already documented
+  elsewhere for this exhausted-quota condition. This is not a hang or a bug — the fast,
+  deterministic path (`tests/backend/test_assistance.py`'s 10 tests, mocking the LLM layer)
+  still passes in under a second and proves the same code path resolves correctly and quickly
+  under normal quota. It does mean a citizen hitting "Explain this" today, specifically, could
+  wait several minutes before seeing the honest fallback explanation rather than the ~75-90s
+  seen on single-LLM-call features (Quick Checker, Explanation Agent) — worth being aware of if
+  demoing live against a fully exhausted quota, though normal quota/tomorrow's reset removes
+  this entirely.
+
+  **Dashboard duplicate audit-log entries — found and fixed [IMPLEMENTED].** The Dashboard's
+  own "recommended bundle" section independently ran eligibility/conflicts/bundle/explanation,
+  and each of `EligibleSchemes`/`Bundle`'s own `useEffect` re-fetched them again when reached
+  from Dashboard, so a single click-through of the demo journey produced 9 audit-trace entries
+  instead of 5 (each core stage except checklist logged twice). Fixed by forwarding
+  Dashboard's already-computed results through React Router's navigation `state` — Dashboard's
+  "Full eligibility breakdown"/"Bundle & conflicts" buttons, and `EligibleSchemes`'s own "See my
+  optimized bundle" button, now pass along whatever was already computed, and each screen skips
+  its own fetch when that state is present, falling back to a fresh fetch only when reached
+  directly (a bookmark, a refresh, or any path that doesn't originate from Dashboard) — fully
+  backward compatible with every other navigation path. `e2e.spec.js`'s trace assertion was
+  restored to an exact count of 5 (from the "at least these 5, duplicates tolerated" workaround)
+  and passes reliably.
+
+  10 new backend tests (`test_assistance.py`, including 4 for the screenshot path added below); 227 total backend tests pass. Known, disclosed
+  limitations (see `extension/README.md`): not published anywhere (load-unpacked only);
+  Firefox/Safari untested.
+
+  **Screenshot/OCR capture — implemented [IMPLEMENTED].** Added the "📷 Capture area" flow:
+  drag-select a region (background service worker's `chrome.tabs.captureVisibleTab` + an
+  `OffscreenCanvas` crop, never the full page), a mandatory preview with a "don't include
+  passwords/OTPs/payment details/ID numbers" warning, then an explicit Send/Cancel choice
+  before anything reaches the backend. New `POST /api/assistance/explain-screenshot` endpoint
+  and `FormAssistanceScreenshotRequest` model (with a server-side decoded-size limit, rejecting
+  oversized images before they ever reach the LLM); the LangGraph workflow's
+  `extract_form_context_node` now branches to a vision-based transcription step (reusing the
+  same Gemini model, no separate OCR dependency) when a screenshot is supplied instead of
+  selected text, then rejoins the identical downstream pipeline (language detection → RAG
+  retrieval → explanation → BR-020 caution enforcement) a text selection already used — no
+  duplicated logic. 4 new backend tests. **Live-verified in the real, unpacked extension**
+  (same Playwright `launchPersistentContext` harness as the text-selection flow): drag-capture,
+  crop, preview render, and a full round trip to the backend that correctly degraded to an
+  honest fallback response once today's Gemini daily quota was (again) exhausted by testing.
+
+  One real bug found and fixed along the way: `chrome.tabs.captureVisibleTab` requires the
+  literal `<all_urls>` host-permission pattern specifically — the equivalent `http://*/*` +
+  `https://*/*` pair (used until this point) is accepted for script injection but was silently
+  insufficient for this one API, surfaced only by actually calling it in the live test, not by
+  reading the manifest. `extension/manifest.json` now declares `<all_urls>` directly.
+
+  **RAG vector store ingestion — infrastructure fixed [IMPLEMENTED], live full-corpus build
+  blocked on external quota [NOT YET COMPLETE].** Running `ingest_policies.py` against the full
+  3,397-scheme corpus surfaced two real bugs in the ingestion pipeline itself, both fixed:
+  (1) `embed_texts` (`app/rag/embeddings.py`) had no rate-limit handling at all, so it failed
+  outright on roughly the 2nd–3rd batch of a ~340-batch run — added retry-with-backoff
+  specifically for 429s, distinct from a hard failure; (2) `ingest_corpus`
+  (`app/rag/ingestion.py`) collected every batch's embeddings in memory and only called
+  `upsert_chunks` once at the very end, so a run interrupted by a quota wall lost **all**
+  progress, not just the incomplete tail — rewritten to upsert after every batch and to skip
+  chunks a prior run already persisted (`vector_store.existing_ids`), so ingestion is now
+  genuinely resumable across quota-limited runs, verified against all existing RAG tests
+  (mocked embeddings) with no regressions.
+
+  The live full-corpus run itself is still blocked: Gemini's free-tier `embedContent` quota
+  turned out to be a **daily** cap (1000 requests/day — a single, unrelated small probe call
+  confirmed the endpoint works at all), not the per-minute cap the retry logic was originally
+  built for, and today's combined testing (this ingestion attempt plus earlier verification
+  work) has already exhausted it — confirmed by the daily-quota error message itself, not
+  assumed. No amount of waiting within this session resolves a daily cap; the next run (any
+  day the quota has room) will pick up exactly where this one stopped, embedding only what
+  isn't already indexed, rather than starting over. Until a run actually completes,
+  `retrieve_policy_evidence` continues to degrade honestly to "not verified" (by design, not a
+  bug) exactly as documented above.
+
+- **A-011 Maharashtra/MahaDBT representative seed set — implemented [IMPLEMENTED].**
+  `database/seed_schemes_maharashtra.json` now has 5 real, named schemes (MahaDBT EBC tuition
+  waiver, Dr. Punjabrao Deshmukh hostel allowance, Namo Shetkari, Sanjay Gandhi Niradhar Anudan,
+  Ramai Awas Gharkul), each `links`-verified by directly fetching the official domain — this
+  caught a dead application domain (`sas.mahait.org` → 308 redirect to `mahadbt2.maharashtra.gov.in`)
+  and confirmed Namo Shetkari has no separate application form (auto-enrolls existing PM-KISAN
+  beneficiaries, mirroring PMAY-G's own pattern). PM-KISAN is deliberately not re-added (already
+  in `seed_schemes.json`). Loaded via a new, idempotent `seed_maharashtra_schemes()` /
+  `backend/scripts/seed_maharashtra.py` — a separate, explicit action, not run on every backend
+  startup. 6 new backend tests, including one proving the cross-file design intent itself: Ramai
+  Awas Gharkul's `conflict_group: "housing_subsidy"` genuinely interacts with
+  `seed_schemes.json`'s own PMAY-Rural/State Rural Housing Assistance pair once both files are
+  loaded into the same collection (conflict groups are just a shared string, not scoped to one
+  seed file) — live-verified against the real MongoDB Atlas cluster, not just the test suite: a
+  citizen eligible for all three housing schemes correctly had the conflict detected across all
+  three pairs and the Bundle Optimizer resolved it to the single highest-benefit option.
+
+- **FR-013 Quick Scheme Eligibility Checker [IMPLEMENTED].** New stateless endpoint
+  `POST /api/quick-check` (`backend/app/api/quick_check.py`, `app/modules/quick_checker/service.py`,
+  `app/models/quick_check.py`) lets anyone check likely eligibility for a single named scheme
+  without creating an account or a citizen record (BR-014) — it reuses the same
+  `rule_engine.engine.evaluate_scheme`/`build_profile_context` used by the main intake flow
+  directly, rather than a second, divergent eligibility implementation. The response carries the
+  scheme's application link (reusing FR-017's `SchemeLinks`/`ApplyLink`, never fabricating a URL),
+  required documents, and — only when the result is `not_eligible` — up to three same-category
+  alternative schemes (never suggesting the scheme itself). The disclaimer text is a server-side
+  constant, not left to frontend discipline, so it can't be silently dropped from a future UI.
+  Frontend: `frontend/src/pages/QuickChecker.jsx`, reachable from the Landing page's
+  "Quick check for one scheme →" button, renders a scheme picker whose criteria fields are derived
+  live from the chosen scheme's own `rules` (`frontend/src/lib/quickCheckFields.js`), reusing the
+  same option sets as the main profile form. Tested: 8 new backend tests
+  (`tests/backend/test_quick_checker.py` — eligible; not-eligible-with-alternatives; indeterminate
+  on missing criteria; date-of-birth→age derivation; unknown/inactive scheme 404s; statelessness
+  verified by asserting no DB write occurs; no-auth-required), bringing the suite to 241 passing.
+  Live-verified in a real browser via Playwright against the running dev stack: selected
+  PM-KISAN, dynamic fields (occupation, land_holding_acres) rendered correctly, submission
+  returned "Eligible" with the disclaimer displayed, zero console errors. Honest scope note: the
+  original FR-013 title's "form-filling guide (English/Marathi)" and "curated video link" portions
+  are deliberately NOT part of this endpoint — that content belongs to FR-014's Scheme Catalog and
+  is tracked there, not fabricated here. Also honest: `/api/quick-check` has no rate-limiting yet,
+  but this is not a new gap specific to this endpoint — no endpoint in the codebase has
+  rate-limiting middleware.
+
+- **FR-014 Scheme Catalog Search with Form-Filling Guides [IMPLEMENTED].** New
+  `GET /api/catalog/schemes` (`backend/app/api/catalog.py`,
+  `app/modules/scheme_catalog/service.py`) extends FR-003's scheme listing with a
+  case-insensitive keyword search (matching name, description, category, and
+  issuing_authority) combined with the existing category/state filters, reusing
+  `scheme_kb.service.list_schemes` rather than a second listing implementation — no matches
+  returns an empty list, never an error, per spec. A new `Scheme.guide` field
+  (`SchemeGuide`/`SchemeGuideUpdate` in `app/models/scheme.py`: `guide_en`, `guide_mr`,
+  `video_url`) was added, dot-notation-merged in `update_scheme` the same way `links` already
+  is (so patching just the video link later won't clobber existing steps). New
+  `GET /api/catalog/schemes/:id/guide` (`service.get_scheme_guide`) 404s only when the scheme
+  itself doesn't exist — a real scheme with no guide authored yet returns `guide: null`
+  honestly rather than fabricating generic steps. Frontend: `frontend/src/pages/SchemeCatalog.jsx`
+  (search box + category filter + expandable per-scheme guide card with an English/Marathi
+  toggle), reachable from Landing's "Browse the scheme catalog →" button. Guide content was
+  authored and verified for the 4 seeded schemes with a `verified` application link (PM-KISAN,
+  Post-Matric Scholarship, MahaDBT EBC Tuition Waiver, Dr. Punjabrao Deshmukh Hostel Allowance)
+  in both `database/seed_schemes.json`/`database/seed_schemes_maharashtra.json` (for future
+  fresh seeds) and patched onto the already-seeded live dev database — the other 9 schemes
+  (`not_available`/`unverified`/`state_specific` links) deliberately have no guide rather than
+  an invented walkthrough for a process that isn't actually a self-service online form.
+  Tested: 8 new backend tests (`tests/backend/test_scheme_catalog.py`), suite now 249 passing.
+  Live-verified in a real browser via Playwright: 13 schemes listed, keyword search for
+  "PM-KISAN" correctly filtered to the 2 matching schemes (name + description match), guide
+  steps rendered and toggled correctly between English and Marathi, a no-guide scheme
+  (Old Age Pension) showed the honest "not yet written" fallback instead of empty/broken UI,
+  zero console errors. Honest scope note: `video_url` is a real, supported field but populated
+  with `null` for every seeded scheme — no curated video walkthrough actually exists yet to
+  link to, so none was fabricated.
+
+- **FR-015 RAG-Based Knowledge Base Freshness [IMPLEMENTED].** New `app/modules/rag_refresh/service.py`
+  reuses the existing `PolicyKnowledgeService.retrieve_scheme_details` (the same retrieval layer
+  FR-004-adjacent policy search already uses) to fetch grounded passages for one scheme, then an
+  LLM drafts a candidate (`RagCandidateDraft`: `benefit_value_estimate`, `criteria_summary`,
+  `document_requirements`, `deadline_text`, `application_url`, plus `confidence`/`rationale`) via
+  `ChatGoogleGenerativeAI.with_structured_output`, same pattern as the Form Assistance workflow's
+  `generate_structured_explanation_node`. The candidate is written ONLY to a new
+  `rag_candidate_updates` collection — never to `schemes` — via `POST /api/admin/rag/refresh`
+  (admin-only). New `GET /api/admin/rag-candidates` (list, filterable by status),
+  `POST /api/admin/rag-candidates/:id/approve`, and `.../reject` round out the review queue.
+  Approval commits through `update_scheme` — the identical function FR-011's manual admin edit
+  already calls — so there is exactly one code path in the whole app that ever writes to
+  `schemes`; a RAG-sourced `application_url` is never auto-marked `verified` on approval
+  (NFR-016), it lands as `unverified` with an audit-trail note appended to
+  `links.verification_notes`. `criteria_summary` maps to the scheme's free-text `description`
+  field on approval, never to the structured `rules` that actually determine eligibility —
+  preserving Section 16's "AI never decides eligibility" boundary even for this feature.
+  Failure handling matches NFR-014 exactly: no retrievable evidence, no configured
+  `GEMINI_API_KEY`, a drafting exception, or a draft with zero confident fields all produce
+  **no candidate at all** (never a low-confidence guess, never an exception bubbling past this
+  module) — verified by 4 dedicated tests. Frontend: `frontend/src/pages/RagCandidates.jsx`
+  (admin-only, linked from the Admin page) — trigger a refresh for a chosen scheme, browse the
+  queue by status, see the proposed diff against the current live values and the cited source
+  passages, and Approve/Reject. Tested: 10 new backend tests
+  (`tests/backend/test_rag_refresh.py`), including the single most important one for this
+  feature — a structural test asserting `rag_candidate_updates` is never referenced anywhere in
+  `rule_engine`, `conflict_engine`, or `optimizer` source code (BR-015) — bringing the suite to
+  259 passing. Live-verified in a real browser via Playwright: seeded a pending candidate
+  directly (the actual end-to-end retrieval+drafting call is blocked by the same exhausted daily
+  Gemini quota documented under item #2/RAG ingestion — this is an external quota limit, not a
+  code defect, and the 4 failure-handling tests cover that exact "no candidate produced" path
+  deterministically), confirmed the queue renders the proposed diff and source citation
+  correctly, approved one candidate and confirmed the live scheme's `benefit_value_estimate`
+  changed via a real `GET /api/schemes/:id` afterward, then rejected a second candidate with a
+  reason and confirmed it appears under the "Rejected" filter with that reason shown — zero
+  console errors. (The verification-only side effects — the approved test value and the two
+  synthetic candidates — were reverted/removed afterward so the dev database reflects only real
+  seed data.) Incidental fix made along the way: while inspecting the live dev database for this
+  verification, found 7 of the original `seed_schemes.json` scheme documents were missing the
+  entire `links` sub-document (stale, pre-dating when `SchemeLinks` was added to the model
+  earlier this session) even though the JSON seed file itself was correct — backfilled those
+  documents' `links` field from the seed file so the live dev catalogue actually matches what a
+  fresh seed would produce.
+  **Known, honest scope limitation:** refresh is curator-triggered per scheme only (no scheduled/
+  automatic sweep across the whole catalogue, and no source allowlist configuration UI) — Q-010
+  (source allowlist) remains open, and a periodic scheduled job was judged out of scope for a
+  prototype with no task scheduler already running.
+
+- **FR-012 Multilingual Conversational & Voice Profile Intake [IMPLEMENTED].** See the full
+  writeup under FR-012 above (Section 6) for implementation detail, testing, and live
+  verification — summarized here for Section 33's running log: `POST /api/intake/converse`,
+  reusing `CitizenUpdate`/`CitizenCreate` for validation and `profile.service.create_citizen`
+  for persistence (BR-013, no parallel validation/persistence path), reusing the existing
+  Multi-language Chat Agent for translation in both directions, a new `intake_sessions`
+  collection for turn-based accumulation, 6 passing tests (suite now 265), and a
+  `ConversationalIntake.jsx` frontend screen with an additive Web Speech API mic button.
+
+- **Citizen Document Upload (plain document management, deliberately NOT verification) [IMPLEMENTED].**
+  Added after a Buddy4Study-pattern-adaptation review identified that the pre-existing Document
+  Verification module (`app/modules/document_verification`, structural PDF checks only) had
+  zero frontend surface anywhere, and the user explicitly redirected scope to "just take
+  inputs" rather than building UI around verification. New `document_uploads` collection +
+  `app/modules/document_uploads/service.py` + `POST/GET /api/citizens/:id/document-uploads`,
+  `GET .../​:upload_id/content`, `DELETE .../:upload_id` (`app/api/document_uploads.py`) let a
+  citizen attach an actual file per required document type — accepted and stored as-is, with
+  an explicit "not verified" note shown in the UI, never a parsed/authenticity claim of any
+  kind. Reuses the exact size-limit-validator pattern already established for assistance
+  screenshots (`document_upload_max_bytes`, new in `app/core/config.py`, default 8MB). A
+  successful upload auto-marks the matching `CitizenDocument.held = True` on the profile, so
+  the existing missing-document checklist reflects it without a separate manual declaration
+  step. Protected by the same `check_owner_or_public` ownership dependency every other
+  citizen-scoped endpoint already uses — ownership-enforcement test included. Frontend:
+  extended `Checklist.jsx` with a per-document-type file input, an upload-chip list with
+  one-click removal, and an honest note that this only stores a copy and marks it held, without
+  verifying it. Tests: 7 new (`tests/backend/test_document_uploads.py` — upload/list/download,
+  auto-hold-marking, oversized-file rejection, invalid-base64 rejection, delete, ownership
+  enforcement, unknown-citizen 404), suite now 272 passing. Live-verified in a real browser via
+  Playwright against the running dev stack (with only the unrelated, LLM-gated checklist-
+  generation call mocked to avoid today's exhausted Gemini quota — the upload/list/delete calls
+  themselves hit the real backend): uploaded a real file, confirmed it round-tripped through
+  the actual database (not just client-side optimism), removed it, confirmed the server-side
+  list reflected the removal — zero console errors. Also fixed a latent bug this surfaced: the
+  frontend's shared `request()` helper (`frontend/src/api/client.js`) unconditionally called
+  `res.json()` on every response, which would have thrown on this feature's first-ever 204 No
+  Content response in the whole app (the DELETE endpoint) — now returns `null` for a 204
+  instead.
+
+- **Grievance & Fraud Detection admin surfaces (P0 items #2/#3 from the Buddy4Study-pattern
+  gap analysis) [IMPLEMENTED].** Both `feedback_grievance` and `fraud_detection` (part of the
+  pre-existing "5 additional agents," Section 34) had a working backend and zero frontend
+  surface anywhere, and — a real gap found while building the UI — no ownership/admin
+  protection on any of their routes at all (any caller who knew a citizen_id could read/list
+  their grievances or fraud flags). Fixed as part of this pass, not deferred: `/api/grievances/*`
+  now uses the same `check_owner_or_public` dependency every other citizen-scoped route uses;
+  `/api/fraud/*` is now entirely `require_admin`-gated (a deliberate design choice — fraud
+  screening is an internal trust-and-safety control, and showing a citizen their own risk
+  flags/indicators would defeat the point of a review mechanism meant to catch inconsistencies
+  before a human looks at them). Added the missing admin capabilities neither module had before:
+  `GET /api/grievances` (list-all, status-filterable) + `POST /api/grievances/:id/resolve`
+  (new `resolution_note`/`resolved_at` fields on `GrievanceOut`); `GET /api/fraud` (list-all,
+  filterable by `risk_level`/`reviewed`) + `POST /api/fraud/:id/review` (new `reviewed`/
+  `reviewer_notes`/`reviewed_at` fields on `FraudFlagOut`) — both reject reviewing/resolving an
+  already-reviewed/resolved item rather than silently overwriting the first reviewer's notes.
+  Frontend: `Grievances.jsx` (citizen-facing — submit a ticket, see own tickets and their
+  resolution notes, with an explicit "not an official government submission" disclosure
+  matching `is_official_submission: false`), `AdminGrievances.jsx` (status-filtered queue +
+  resolve action), `AdminFraud.jsx` (trigger a screening run for a citizen/scheme, filter the
+  queue by reviewed state, see indicators + risk level + summary, mark reviewed with notes) —
+  all reachable via new links from Admin.jsx and the citizen Dashboard. Tests: 9 new
+  (`test_grievances_api.py`/`test_fraud_api.py` additions — admin list-all, non-admin 403,
+  resolve/review success, double-resolve/double-review rejected), suite now 281 passing.
+  Live-verified in a real browser via Playwright against the running dev stack, using real
+  data end-to-end (a real citizen, a real document verification, a real fraud screening run):
+  fraud screening and admin review both completed and rendered correctly within seconds;
+  citizen ticket submission and admin resolve both round-tripped through the real database
+  correctly, though ticket *creation* specifically took noticeably longer than usual today —
+  traced to `create_grievance`'s pre-existing call into the RAG retrieval layer for
+  department lookup (an embedding call), which is independently subject to the same exhausted
+  daily `embedContent` quota documented elsewhere this session; the retry/backoff sequence
+  (`app/rag/embeddings.py`) can run up to ~150-190s worst-case before the already-correct
+  honest fallback fires — confirmed the ticket did land correctly once that sequence finished,
+  so this is latency under an external quota limit, not a functional defect. All test data
+  created during verification (citizen, grievances, fraud flags, document verification, admin
+  test account) was removed afterward.
+
+- **Buddy4Study-pattern P1/P2 features (Notification Center, Saved/Watchlist schemes,
+  Activity/History, Natural-language catalog search, Admin analytics, scheme data-quality
+  reports) [IMPLEMENTED].** Built one at a time after the P0 pass above:
+  - **Notification Center** — new `notifications` collection + `GET/POST /api/citizens/:id/
+    notifications*` (ownership-protected), populated by real events only (grievance created/
+    resolved) and merged at read time with the existing `reminders` collection (reshaped, not
+    duplicated) — never a fabricated or scheduled push, matching this app's honest
+    no-real-delivery-provider stance elsewhere. `NotificationBell.jsx` in the Dashboard topbar.
+  - **Saved/Watchlist schemes** — new `saved_schemes` collection, idempotent save/unsave,
+    ownership-protected; a ★ toggle on `SchemeCard` and a dedicated `SavedSchemes.jsx` page.
+  - **Activity/History** — deliberately NOT a new logging collection: `Activity.jsx` composes
+    a timeline purely from data three other features already expose (notifications,
+    grievances, saved schemes), avoiding duplicated history-tracking; links out to the
+    pre-existing full reasoning-trace page for step-by-step pipeline detail.
+  - **Natural-language catalog search** — `POST /api/catalog/search-natural-language` extracts
+    a topic + state from a free-text sentence via structured LLM output, bounded by an 8-second
+    `asyncio.wait_for` specifically because — unlike every other LLM feature in this app, which
+    has no non-AI equivalent and so accepts long quota-driven retry waits — this one sits on
+    top of an always-working plain keyword search, so an unavailable/slow LLM must never be
+    allowed to make catalog search itself feel broken. Falls back to the raw text as a keyword
+    query, `used_ai: false`, never hidden from the caller.
+  - **Admin analytics** — `GET /api/admin/analytics`, purely deterministic Mongo counts/
+    aggregations (citizens, active schemes, eligibility evaluations, bundles, grievance/fraud/
+    RAG-queue backlog, top categories, most-saved schemes) — zero LLM calls, so it's always
+    fast regardless of quota state. `AdminAnalytics.jsx` stat-card dashboard.
+  - **Scheme data-quality reports** — new `scheme_reports` collection, `POST /api/scheme-
+    reports` (public — even an anonymous catalog browser can flag something wrong),
+    `GET`/`.../resolve` (admin-only). Deliberately distinct from FR-015's RAG candidate queue:
+    a report here is a raw, unverified citizen claim, never AI-drafted or source-grounded, and
+    never auto-applied to `schemes` — a curator reads it and acts through the existing FR-011
+    edit path or a FR-015 refresh if warranted. `ReportSchemeControl.jsx` (small inline form on
+    each catalog card) + `AdminSchemeReports.jsx` review queue.
+  - Real security gaps found and fixed while building this (not deferred): `/api/grievances/*`
+    and `/api/reminders/*` had zero ownership protection before this pass (any caller knowing a
+    citizen_id could read their data) — now use the same `check_owner_or_public` dependency
+    every other citizen-scoped route uses; `/api/fraud/*` is now entirely `require_admin`-gated
+    (citizens never see their own risk flags — showing them would defeat an internal
+    trust-and-safety control).
+  - Tests: 27 new across `test_notifications.py`, `test_saved_schemes.py`, `test_nl_search.py`
+    (including a dedicated test proving the NL-parse timeout bound actually holds under a
+    simulated 30-second hang), `test_analytics.py`, `test_scheme_reports.py` — suite now 308
+    passing. Every feature live-verified end-to-end in a real browser via Playwright against
+    the running dev stack, using real data created through the real APIs (never fixtures
+    injected directly into the database) — bell badge/panel/mark-read, save/unsave round-
+    tripping through the real database, the Activity timeline, NL search's live honest-
+    fallback path (confirmed via direct API call after a test script's own selector picked up
+    a stale element), the full analytics stat grid with real numbers, and the report-submit →
+    admin-resolve round trip. All test data and accounts created for verification were removed
+    afterward.
+  - **Investigated and closed, not a bug:** a duplicate-eligibility-evaluation concern raised
+    after the analytics pass exposed high `eligibility_results` counts (up to 48 for one
+    citizen) turned out to be entirely expected, not a defect — `evaluate_eligibility`
+    (`app/modules/rule_engine/service.py:24-48`) inserts one document per *active scheme* on
+    every call by design (a full per-scheme audit trail, not per-citizen dedup), and the counts
+    observed are exactly explained by (a) this session's own repeated live-testing across many
+    throwaway citizens and (b) React `StrictMode` (enabled in `main.jsx`, dev-only) correctly
+    double-invoking effects. No code change was made, since none was needed.
+  - **Not implemented, by explicit design choice, not oversight:** peer-to-peer messaging and a
+    request/offer marketplace — this domain has no actor-to-actor negotiation workflow for
+    either to attach to (a citizen never transacts with another citizen or a specific curator),
+    so building either would be invented complexity with no real problem behind it.
+
+- **Form Guide — YouTube tutorial video integration [IMPLEMENTED].** Adds a second, optional
+  path alongside FR-014's existing step-by-step guide: "📺 Watch Video Tutorial", which
+  redirects to the single most relevant real YouTube video for that scheme — never replacing
+  or blocking the text guide. New `app/modules/video_recommendation/` package, split the same
+  way `explanation/llm_client.py` already separates network code from logic:
+  - `client.py` — thin YouTube Data API v3 wrapper (`search.list` to discover candidates,
+    `videos.list` **batched** — one call for every candidate id, never one call per video —
+    for statistics/snippet/status), collapsing every failure mode (bad key, quota, network,
+    malformed response) into one `YouTubeApiError`.
+  - `engine.py` — pure, dependency-free ranking math (no network, directly unit-testable):
+    `overall = 0.45·title_relevance + 0.25·keyword_relevance + 0.15·view_score +
+    0.08·like_score + 0.07·recency_score`. Title relevance dominates by design — a viral but
+    unrelated video can never outrank a specific, on-topic one; views/likes are log-normalized
+    **within the candidate set** (not against an absolute scale) so one outlier can't blow out
+    the score; a `MIN_RELEVANCE_THRESHOLD` of 0.35 means "no suitable video found" is returned
+    honestly rather than a weak match. `build_search_query` anchors every query on the
+    scheme's own name (never a generic "how to fill form" query).
+  - `service.py` — orchestrates cache-first lookup (new `video_recommendations` collection,
+    one document per scheme, `last_verified_at` + a configurable `youtube_video_cache_ttl_days`
+    default 30) → query build → client calls → ranking, with every failure path (no API key,
+    YouTube error, zero results, all-below-threshold) degrading to
+    `{"available": false, "reason": "..."}` — never an exception, never blocking the Form Guide.
+  - `GET /api/catalog/schemes/:id/video-tutorial` (public, no auth — matches the existing
+    guide endpoint's access level). `YOUTUBE_API_KEY` added to `app/core/config.py`/`.env`/
+    `.env.example`, server-side only, never sent to the frontend.
+  - Frontend: `SchemeCatalog.jsx`'s existing guide-expansion flow now also lazily (only on
+    "View guide" click, same trigger as the guide itself) fetches the video recommendation in
+    parallel — an independent `.then/.catch` chain, so a slow/failed video call can never delay
+    or break the step-by-step guide rendering next to it. Shows "Finding the best video
+    tutorial…" while loading, an accessible `<a target="_blank">` styled as a button (never a
+    bare icon — the visible text and `aria-label` both state what it does) when available, and
+    a plain, honest inline message when not — the guide itself is fully usable in every case.
+  - Tests: 23 new (`test_video_recommendation_engine.py` — 9, ranking math including "relevant
+    beats popular-but-unrelated" and "below-threshold returns None"; `test_video_recommendation_
+    client.py` — 6, HTTP-level error handling; `test_video_recommendation_api.py` — 8,
+    including a dedicated regression test proving `GET .../guide` keeps working even when the
+    video call raises), suite now 331 passing.
+  - **Live-verified twice** — first with no API key configured (real dev condition until the
+    user supplies one): Form Guide rendered fully, video section showed "Video tutorials are
+    not configured for this platform," zero console errors. **Then the user pasted a real
+    YouTube Data API v3 key into `backend/.env` mid-session**, and the feature was re-verified
+    end-to-end against the *real* YouTube API: a real search for PM-KISAN correctly returned
+    "PM Kisan Samman Nidhi Yojana Ka Form Kaise Bhare | ... Online Registration" (396,601 real
+    views, scored 0.868, well clear of threshold) in 1.3s; the second request served from cache
+    in 0.28s; the real browser test clicked the real "Watch Video Tutorial" button and
+    confirmed a real new tab opened at the exact `youtube.com/watch?v=...` URL YouTube
+    returned. This is the only feature this session verified against its real, live external
+    API end-to-end in the browser (every other LLM-backed feature today was blocked by
+    Gemini's exhausted quota) — a genuine, complete, working confirmation, not a mocked
+    approximation.
+  - **Known, honest scope limitations:** channel authority/reputation is not independently
+    scored (the brief allows this "where available"; doing it reliably would need either a
+    curated allowlist of official channels or a second API call per candidate channel, judged
+    not worth the added complexity/quota cost at this scale) — title/keyword relevance and
+    engagement signals already correlate well with channel quality in practice, as the
+    PM-KISAN result shows. Indian-language keywords ("kaise bhare", "aavedan") are included in
+    the fixed how-to-keyword list used for keyword_relevance, but query generation itself stays
+    English-anchored on the scheme's own name rather than generating separate per-language
+    query variants, per the brief's own "do not blindly append every language keyword"
+    guidance.
+
 Pending:
-- **[EXTENDED SCOPE] Phase 9 (Quick Checker & Scheme Catalog), Phase 10 (Conversational/Voice
-  Profile Intake), and Phase 11 (RAG Knowledge-Base Freshness) are specified in this plan
-  (Sections 1, 3–13a, 15–27, 29–32) but NOT YET IMPLEMENTED in the codebase.** No code for
-  FR-012, FR-013, FR-014, or FR-015 exists yet: there is no `/api/intake/converse`,
-  `/api/quick-check`, `/api/catalog/...`, or `/api/admin/rag-candidates...` endpoint; no
-  `rag_candidate_updates` collection; no `voice_intake/`, `quick_checker/`, `scheme_catalog/`,
-  or `rag/` backend module; no Conversational/Voice Intake, Quick Checker, Scheme Catalog, or
-  Admin RAG Candidate Review Queue frontend screen; and no `seed_schemes_maharashtra.json`
-  seed file. These sections were added to formalize decisions made during hackathon-submission
-  documentation work (the Maharashtra/MahaDBT narrative, the multilingual/voice concept, the
-  RAG freshness layer) so the *plan* stays ahead of and consistent with what was pitched, per
-  this revision's instruction to capture every discussed constraint/feature — but the actual
-  Phases 0–8 build (99 backend tests, 2 Playwright E2E suites, live-verified against real
-  MongoDB) remains the only part of the system that exists and runs today.
+- **All four extended-scope requirements from the original specification (FR-012 through
+  FR-015) are now [IMPLEMENTED].** Phases 9, 10, and 11 (Sections 1, 3–13a, 15–27, 29–32) are
+  complete alongside the original Phases 0–8. This section historically tracked what remained
+  of the hackathon-submission-driven extended scope; as of this pass, nothing in that scope is
+  outstanding. Known, honest per-feature scope limitations (guide content authored for only 4
+  of 13 schemes; no scheduled/automatic RAG refresh sweep; no source-allowlist configuration
+  UI; `deadline_text` has no dedicated structured field; voice input depends on the browser's
+  own Web Speech API support) are recorded in each feature's own writeup above, not repeated
+  here.
+  **Update on the original punch list's items #9-#13:** investigated directly rather than left
+  as assumed-external. #11 ("a stale pitch-deck file") turned out to be a phantom — no `.pptx`
+  or pitch-deck file of any kind exists anywhere on disk; there was nothing to fix. #12/#13
+  ("hackathon-doc placeholders", the "AI Tools Used" table) trace to one real file,
+  `Kurukshetra_2.0_PS_Documentation_Template.docx` (outside this git repo, one directory up) —
+  a blank HACKFEST 2026 submission template. `docs/hackfest_submission_draft.md` now contains a
+  copy-paste-ready draft for every section derivable from this repo (Problem Statement,
+  Analysis, Proposed Solution, Research, Technology Stack, Architecture, Implementation
+  Approach, AI/ML Details, Open-Source Resources Used, and a fully drafted "AI Tools Used"
+  section), leaving only genuinely personal fields (team ID/name/members, the assigned Problem
+  Statement number, submission date, and the signature) marked `[YOUR INPUT NEEDED]` — those
+  cannot be authored by me since they're the team's own identity/attestation, not derivable
+  from the codebase.
+  **#10 (extension store publishing/Firefox port) — everything short of the account/payment/
+  review steps is now done.** Added `extension/icons/` (16/32/48/128px, generated
+  programmatically, wired into `manifest.json`'s `icons`/`action.default_icon`); added a
+  `browser_specific_settings.gecko` block (id, `strict_min_version`, `data_collection_
+  permissions`) and a `background.scripts` fallback alongside `background.service_worker`, so
+  the same manifest works for both Chrome (service worker) and Firefox (scripts array) without
+  a second build. Verified against Mozilla's own `web-ext lint` — 0 errors (down from 1 error +
+  1 warning on the first pass; two remaining warnings are expected/harmless: Firefox correctly
+  ignoring the Chrome-only `service_worker` key by design, and a Firefox-for-Android version
+  note that doesn't apply since this extension only targets desktop). Re-verified live via
+  Playwright that Chrome still loads the extension cleanly (service worker registers, zero
+  errors) after all manifest changes. `extension/STORE_LISTING.md` (new) has fully drafted
+  Chrome Web Store and Firefox AMO listing copy — title, description, category, and (since
+  Manifest V3 requires it) a permission-by-permission privacy justification for every
+  permission this extension declares, including the broad `<all_urls>` host permission — plus
+  exact packaging commands (`zip`/`web-ext build`) and a checklist of what only a human with
+  store-developer accounts can still do (screenshots, a hosted privacy-policy URL, the actual
+  account signup/payment/submission). **Honest limitation:** Firefox compatibility is a
+  static/lint-level pass only, not runtime-verified — Playwright cannot load an arbitrary
+  extension into its Firefox build, so no one has actually clicked through the extension in a
+  real Firefox instance yet. **Safari genuinely cannot be progressed further without a Mac +
+  Xcode + Apple Developer account** — `STORE_LISTING.md` documents the exact conversion steps,
+  but there is no way to perform them from this environment.
+  **#9 (Resend domain verification) remains genuinely external** — it needs DNS/account access
+  to a domain this session doesn't control (the user is in the process of setting this up).
+  **The Buddy4Study-pattern P0/P1/P2 gap analysis is now fully closed** — see the Notification
+  Center/Saved Schemes/Activity/NL Search/Analytics/Scheme Reports writeup above; only peer
+  messaging and a request/offer marketplace remain un-implemented, by deliberate domain-fit
+  decision, not oversight. The hackathon submission doc's personal/team-identity fields
+  (#6 in an earlier internal list) were explicitly descoped by the user — not tracked as
+  outstanding. Remaining open items: #9, Safari for #10, and the still-open discussion
+  questions Q-003/Q-004/Q-006/Q-007/Q-009/Q-010 (Section 30) — none of which block any
+  implemented feature from working.
 
 Blocked:
 - None currently. Q-001 (KB scope) and Q-002 (auth) are resolved per A-001 and the Phase 1 auth

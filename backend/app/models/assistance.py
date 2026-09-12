@@ -12,10 +12,13 @@ Two-step session handshake, deliberately not a single long-lived token in a URL:
    actually authorizes `explain-text` calls, and it never appears in a URL.
 """
 
+import base64
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.core.config import get_settings
 
 
 class CreateAssistanceSessionRequest(BaseModel):
@@ -61,6 +64,35 @@ class FormAssistanceRequest(BaseModel):
     nearby_help_text: str | None = None
     preferred_language: str | None = None
     explanation_mode: Literal["text", "voice", "text_and_voice"] = "text"
+
+
+class FormAssistanceScreenshotRequest(BaseModel):
+    """The screenshot-crop counterpart to FormAssistanceRequest (Section 7 Option B). Same
+    session-derived scheme_id/origin rule applies — nothing here is trusted from the client
+    beyond the image itself and display preferences.
+    """
+
+    screenshot_base64: str
+    mime_type: Literal["image/png", "image/jpeg"] = "image/png"
+    preferred_language: str | None = None
+    explanation_mode: Literal["text", "voice", "text_and_voice"] = "text"
+
+    @field_validator("screenshot_base64")
+    @classmethod
+    def _enforce_size_limit(cls, v: str) -> str:
+        # Decoded size, not the base64 string length (base64 inflates size ~33%) — matches
+        # what actually gets held in memory and sent to the LLM.
+        try:
+            decoded_len = len(base64.b64decode(v, validate=True))
+        except Exception as exc:
+            raise ValueError("screenshot_base64 is not valid base64") from exc
+        max_bytes = get_settings().assistance_screenshot_max_bytes
+        if decoded_len > max_bytes:
+            raise ValueError(
+                f"Screenshot is {decoded_len} bytes, which exceeds the {max_bytes}-byte limit — "
+                "crop a smaller region of the form."
+            )
+        return v
 
 
 class OptionExplanation(BaseModel):

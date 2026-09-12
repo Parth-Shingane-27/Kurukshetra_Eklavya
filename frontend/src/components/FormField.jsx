@@ -1,9 +1,10 @@
-export function TextField({ label, name, type = "text", value, onChange, error, hint, required, ...rest }) {
+export function TextField({ label, name, type = "text", value, onChange, error, hint, required, help, ...rest }) {
   return (
     <div className={`field${error ? " invalid" : ""}`}>
       <label htmlFor={name}>
         {label}
         {required ? " *" : ""}
+        {help}
       </label>
       <input id={name} name={name} type={type} value={value} onChange={onChange} {...rest} />
       {hint && !error && <span className="hint">{hint}</span>}
@@ -16,10 +17,13 @@ export function TextField({ label, name, type = "text", value, onChange, error, 
   );
 }
 
-export function SelectField({ label, name, value, onChange, options, error, hint }) {
+export function SelectField({ label, name, value, onChange, options, error, hint, help }) {
   return (
     <div className={`field${error ? " invalid" : ""}`}>
-      <label htmlFor={name}>{label}</label>
+      <label htmlFor={name}>
+        {label}
+        {help}
+      </label>
       <select id={name} name={name} value={value} onChange={onChange}>
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>

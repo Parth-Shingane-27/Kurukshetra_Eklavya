@@ -3,12 +3,12 @@ import { createAssistanceSession } from "../api/client";
 
 const STATUS_COPY = {
   verified: {
-    label: "Apply on the official portal ↗",
+    label: "Apply Now ↗",
     note: null,
     tone: "success",
   },
   unverified: {
-    label: "Visit application page ↗",
+    label: "Apply Now ↗",
     note: "This link has not been independently verified — check the web address carefully before entering any personal details.",
     tone: "warning",
   },
@@ -75,7 +75,7 @@ export default function ApplyLink({ url, status, moreInfoUrl, schemeId }) {
 
   return (
     <div className={`apply-link-block apply-link-${copy.tone}`}>
-      <a href={url} target="_blank" rel="noreferrer" className="apply-link" onClick={handleClick}>
+      <a href={url} target="_blank" rel="noreferrer" className="apply-link apply-button" onClick={handleClick}>
         {opening ? "Opening…" : copy.label}
       </a>
       {copy.note && <p className="apply-note">{copy.note}</p>}

@@ -8,6 +8,8 @@ class FormAssistanceState(TypedDict, total=False):
     field_label: str | None
     field_options: list[str]
     nearby_help_text: str | None
+    screenshot_base64: str | None
+    screenshot_mime_type: str | None
     preferred_language: str | None
 
     consolidated_text: str

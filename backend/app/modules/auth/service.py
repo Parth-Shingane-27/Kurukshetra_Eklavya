@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -6,12 +6,8 @@ from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.core.config import get_settings
-from app.core.email_sender import send_otp_email
 from app.core.security import (
     create_access_token,
-    generate_otp_code,
-    generate_pending_token,
-    hash_otp_code,
     hash_password,
     verify_password,
 )
@@ -53,63 +49,25 @@ async def _get_user_by_email(db: AsyncIOMotorDatabase, email: str) -> dict | Non
     return await db.users.find_one({"email": email.lower()})
 
 
-async def login_step1(db: AsyncIOMotorDatabase, email: str, password: str) -> tuple[str, str | None]:
-    """Verifies email+password (step 1) and emails an OTP (step 2 setup).
+async def _find_owned_citizen_id(db: AsyncIOMotorDatabase, user_id: str) -> str | None:
+    """Covers citizen profiles created (via POST /api/citizens while logged in, which already
+    stamps `owner_user_id`) before this account's `citizen_id` link existed — without this, a
+    citizen who registered/logged in before their profile creation would never see their own
+    dashboard after logging in again, since `users.citizen_id` would stay null forever."""
+    citizen = await db.citizens.find_one({"owner_user_id": user_id}, sort=[("created_at", -1)])
+    return str(citizen["_id"]) if citizen else None
 
-    Returns (pending_token, debug_otp). debug_otp is None unless email delivery fell back to
-    console logging (see app/core/email_sender.py).
-    """
-    settings = get_settings()
+
+async def login(db: AsyncIOMotorDatabase, email: str, password: str) -> TokenResponse:
     user = await _get_user_by_email(db, email)
     if user is None or not verify_password(password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
-    code = generate_otp_code()
-    pending_token = generate_pending_token()
-    now = datetime.now(timezone.utc)
-    await db.pending_logins.insert_one(
-        {
-            "pending_token": pending_token,
-            "user_id": user["_id"],
-            "code_hash": hash_otp_code(code),
-            "attempts": 0,
-            "created_at": now,
-            "expires_at": now + timedelta(seconds=settings.otp_expire_seconds),
-        }
-    )
-
-    sent_via_resend = await send_otp_email(to_email=user["email"], code=code)
-    debug_otp = None if sent_via_resend else code
-    return pending_token, debug_otp
-
-
-async def verify_otp(db: AsyncIOMotorDatabase, pending_token: str, code: str) -> TokenResponse:
-    settings = get_settings()
-    pending = await db.pending_logins.find_one({"pending_token": pending_token})
-    if pending is None:
-        raise HTTPException(status_code=401, detail="Invalid or expired verification session")
-
-    now = datetime.now(timezone.utc)
-    expires_at = pending["expires_at"]
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    if now > expires_at:
-        await db.pending_logins.delete_one({"_id": pending["_id"]})
-        raise HTTPException(status_code=401, detail="Verification code expired, please log in again")
-
-    if pending["attempts"] >= settings.otp_max_attempts:
-        await db.pending_logins.delete_one({"_id": pending["_id"]})
-        raise HTTPException(status_code=401, detail="Too many incorrect attempts, please log in again")
-
-    if hash_otp_code(code) != pending["code_hash"]:
-        await db.pending_logins.update_one({"_id": pending["_id"]}, {"$inc": {"attempts": 1}})
-        raise HTTPException(status_code=401, detail="Incorrect verification code")
-
-    await db.pending_logins.delete_one({"_id": pending["_id"]})
-
-    user = await db.users.find_one({"_id": pending["user_id"]})
-    if user is None:
-        raise HTTPException(status_code=401, detail="Account no longer exists")
+    if user.get("citizen_id") is None:
+        owned_citizen_id = await _find_owned_citizen_id(db, str(user["_id"]))
+        if owned_citizen_id is not None:
+            await link_citizen_to_user(db, str(user["_id"]), owned_citizen_id)
+            user["citizen_id"] = owned_citizen_id
 
     access_token = create_access_token(user_id=str(user["_id"]), role=user["role"])
     return TokenResponse(access_token=access_token, user=UserOut(**_serialize_user(user)))

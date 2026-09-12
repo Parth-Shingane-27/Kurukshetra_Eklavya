@@ -5,22 +5,35 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
 from app.api.agent import router as agent_router
+from app.api.analytics import router as analytics_router
 from app.api.assistance import router as assistance_router
 from app.api.assistant import router as assistant_router
 from app.api.auth import router as auth_router
 from app.api.bundle import router as bundle_router
+from app.api.catalog import router as catalog_router
 from app.api.checklist import router as checklist_router
 from app.api.citizens import router as citizens_router
 from app.api.conflict_rules import router as conflict_rules_router
 from app.api.conflicts import router as conflicts_router
+from app.api.document_uploads import router as document_uploads_router
 from app.api.document_verification import router as document_verification_router
 from app.api.eligibility import router as eligibility_router
 from app.api.fraud import router as fraud_router
 from app.api.grievances import router as grievances_router
 from app.api.health import router as health_router
 from app.api.multilingual import router as multilingual_router
+from app.api.nl_search import router as nl_search_router
+from app.api.notifications import router as notifications_router
 from app.api.policy_search import router as policy_search_router
+from app.api.quick_check import router as quick_check_router
+from app.api.rag_candidates import router as rag_candidates_router
 from app.api.reminders import router as reminders_router
+from app.api.saved_schemes import router as saved_schemes_router
+from app.api.scheme_discovery import router as scheme_discovery_router
+from app.api.scheme_reports import router as scheme_reports_router
+from app.api.video_recommendation import router as video_recommendation_router
+from app.api.voice_intake import router as voice_intake_router
+from app.api.web_scheme_search import router as web_scheme_search_router
 from app.api.schemes import router as schemes_router
 from app.core.config import get_settings
 from app.core.db import get_db
@@ -88,9 +101,22 @@ app.include_router(checklist_router)
 app.include_router(agent_router)
 app.include_router(policy_search_router)
 app.include_router(document_verification_router)
+app.include_router(document_uploads_router)
 app.include_router(reminders_router)
 app.include_router(grievances_router)
 app.include_router(fraud_router)
 app.include_router(multilingual_router)
 app.include_router(assistant_router)
 app.include_router(assistance_router)
+app.include_router(quick_check_router)
+app.include_router(catalog_router)
+app.include_router(rag_candidates_router)
+app.include_router(scheme_discovery_router)
+app.include_router(voice_intake_router)
+app.include_router(notifications_router)
+app.include_router(saved_schemes_router)
+app.include_router(nl_search_router)
+app.include_router(analytics_router)
+app.include_router(scheme_reports_router)
+app.include_router(video_recommendation_router)
+app.include_router(web_scheme_search_router)

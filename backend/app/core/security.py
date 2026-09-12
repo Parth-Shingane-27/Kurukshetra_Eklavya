@@ -1,9 +1,5 @@
-"""Password hashing, JWT issuance/verification, and OTP generation for FR-016
-(two-step email+password+OTP authentication). See plan.md Section 20/BR-016.
-"""
+"""Password hashing and JWT issuance/verification for email+password authentication."""
 
-import hashlib
-import secrets
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
@@ -62,15 +58,3 @@ def decode_assistance_token(token: str) -> dict | None:
     if payload is None or payload.get("typ") != "assistance":
         return None
     return payload
-
-
-def generate_otp_code() -> str:
-    return f"{secrets.randbelow(1_000_000):06d}"
-
-
-def hash_otp_code(code: str) -> str:
-    return hashlib.sha256(code.encode("utf-8")).hexdigest()
-
-
-def generate_pending_token() -> str:
-    return secrets.token_urlsafe(32)

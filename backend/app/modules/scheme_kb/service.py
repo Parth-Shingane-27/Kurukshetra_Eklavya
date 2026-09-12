@@ -10,6 +10,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.models.scheme import ConflictRuleCreate, SchemeCreate, SchemeUpdate
 
 SEED_FILE = Path(__file__).resolve().parents[4] / "database" / "seed_schemes.json"
+MAHARASHTRA_SEED_FILE = Path(__file__).resolve().parents[4] / "database" / "seed_schemes_maharashtra.json"
 
 
 def _to_object_id(scheme_id: str) -> ObjectId:
@@ -85,6 +86,10 @@ async def update_scheme(db: AsyncIOMotorDatabase, scheme_id: str, payload: Schem
         if links_patch:
             for key, value in links_patch.items():
                 updates[f"links.{key}"] = value
+        guide_patch = updates.pop("guide", None)
+        if guide_patch:
+            for key, value in guide_patch.items():
+                updates[f"guide.{key}"] = value
         updates["updated_at"] = datetime.now(timezone.utc)
         result = await db.schemes.update_one({"_id": oid}, {"$set": updates})
         if result.matched_count == 0:
@@ -183,3 +188,32 @@ async def seed_schemes_if_empty(db: AsyncIOMotorDatabase) -> None:
                 "reason": rule.get("reason"),
             }
         )
+
+
+async def seed_maharashtra_schemes(db: AsyncIOMotorDatabase) -> dict:
+    """Loads database/seed_schemes_maharashtra.json (A-011) — a SEPARATE, explicit action from
+    `seed_schemes_if_empty`, not run automatically on every backend startup, since it augments
+    (rather than bootstraps) the catalogue and an operator should choose when to add it.
+
+    Idempotent per-scheme by `name` (not "only if the whole collection is empty" like the
+    startup seeder) — safe to re-run at any time; already-present schemes are left untouched
+    rather than duplicated or overwritten, so a curator's own edits to a previously-seeded
+    Maharashtra scheme survive a re-run.
+    """
+    data = json.loads(MAHARASHTRA_SEED_FILE.read_text(encoding="utf-8"))
+    now = datetime.now(timezone.utc)
+
+    inserted_names: list[str] = []
+    skipped_names: list[str] = []
+    for scheme in data["schemes"]:
+        scheme = dict(scheme)
+        scheme.pop("seed_key", None)
+        existing = await db.schemes.find_one({"name": scheme["name"]})
+        if existing is not None:
+            skipped_names.append(scheme["name"])
+            continue
+        doc = {**scheme, "created_at": now, "updated_at": now}
+        await db.schemes.insert_one(doc)
+        inserted_names.append(scheme["name"])
+
+    return {"inserted": inserted_names, "skipped": skipped_names}

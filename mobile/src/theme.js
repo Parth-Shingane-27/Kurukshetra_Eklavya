@@ -2,21 +2,21 @@
 // and the website read as the same product.
 
 export const colors = {
-  text: "#1f2430",
-  textMuted: "#5b6270",
-  bg: "#f7f7fa",
-  surface: "#ffffff",
-  border: "#e0e1e6",
-  accent: "#2f6f4f",
-  accentSoft: "#e7f2ec",
-  accentContrast: "#ffffff",
-  danger: "#b3261e",
-  dangerBg: "#fbeceb",
-  warning: "#8a5b00",
-  warningBg: "#fdf1da",
-  success: "#1e6b3c",
-  successBg: "#e7f5ec",
-  neutralBg: "#eef0f3",
+  text: "#172b3a",
+  textMuted: "#66757f",
+  bg: "#f6f3ed",
+  surface: "#fffefa",
+  border: "#e2e0d9",
+  accent: "#1f7a4d",
+  accentSoft: "#e6f4ea",
+  accentContrast: "#fffefa",
+  danger: "#a94a45",
+  dangerBg: "#f7e8e5",
+  warning: "#b77928",
+  warningBg: "#f7eedb",
+  success: "#1f7a4d",
+  successBg: "#e6f4ea",
+  neutralBg: "#eceae4",
 };
 
 export const badgeColors = {

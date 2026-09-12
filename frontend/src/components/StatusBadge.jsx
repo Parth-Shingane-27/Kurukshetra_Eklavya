@@ -1,9 +1,14 @@
 const LABELS = {
-  eligible: "Eligible",
-  not_eligible: "Not eligible",
-  indeterminate: "Needs more info",
+  eligible: "Likely eligible",
+  not_eligible: "Not currently matched",
+  indeterminate: "Needs verification",
   held: "Held",
   missing: "Missing",
+  open: "Open",
+  resolved: "Resolved",
+  low: "Low risk",
+  medium: "Medium risk",
+  high: "High risk",
 };
 
 export default function StatusBadge({ status }) {

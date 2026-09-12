@@ -46,6 +46,27 @@ class SchemeLinks(BaseModel):
     verification_notes: list[str] = Field(default_factory=list)
 
 
+class SchemeGuide(BaseModel):
+    """FR-014 form-filling guide metadata for one scheme. Steps are plain ordered strings
+    rather than free-form markdown/HTML so both the web and mobile catalog screens can render
+    them identically. `video_url` is optional and, like `SchemeLinks`, must never be a fabricated
+    placeholder — only ever set once a real, checked video walkthrough exists for the scheme."""
+
+    guide_en: list[str] = Field(default_factory=list)
+    guide_mr: list[str] = Field(default_factory=list)
+    video_url: str | None = None
+
+
+class SchemeGuideUpdate(BaseModel):
+    """All fields optional so an admin/curator can patch just one part of the guide (e.g. add
+    a video link later) without clobbering the rest — merged via dot-notation `$set`, same
+    pattern as `SchemeLinksUpdate`."""
+
+    guide_en: list[str] | None = None
+    guide_mr: list[str] | None = None
+    video_url: str | None = None
+
+
 class SchemeLinksUpdate(BaseModel):
     """All fields optional so PUT /api/schemes/:id can patch a single link field (e.g. just
     re-verify `application_url`) without clobbering the rest of `links` — merged at the storage
@@ -123,6 +144,10 @@ class SchemeBase(BaseModel):
     """Replaces the earlier flat `source_reference`/`application_link` strings (migrated) —
     see `SchemeLinks` for why a scheme's policy page, official homepage, application form,
     renewal portal, and grievance portal must be tracked separately rather than as one URL."""
+    guide: SchemeGuide | None = None
+    """FR-014: optional form-filling guide (English/Marathi steps, video link). None means no
+    guide has been authored for this scheme yet — the catalog shows that honestly rather than
+    inventing generic filler steps."""
     rules: list[SchemeRule] = Field(default_factory=list)
     document_requirements: list[SchemeDocumentRequirement] = Field(default_factory=list)
 
@@ -144,6 +169,7 @@ class SchemeUpdate(BaseModel):
     conflict_group: str | None = None
     is_active: bool | None = None
     links: SchemeLinksUpdate | None = None
+    guide: SchemeGuideUpdate | None = None
     rules: list[SchemeRule] | None = None
     document_requirements: list[SchemeDocumentRequirement] | None = None
 

@@ -1,6 +1,8 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Text } from "react-native";
 import { CitizenProvider } from "../context/CitizenContext";
+import ApplicationsScreen from "../screens/ApplicationsScreen";
+import DocumentsScreen from "../screens/DocumentsScreen";
 import ExploreScreen from "../screens/ExploreScreen";
 import HomeScreen from "../screens/HomeScreen";
 import { colors } from "../theme";
@@ -24,6 +26,16 @@ export default function MainTabs() {
       >
         <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: ({ color }) => <TabIcon symbol="🏠" color={color} /> }} />
         <Tab.Screen name="Explore" component={ExploreScreen} options={{ tabBarIcon: ({ color }) => <TabIcon symbol="🔍" color={color} /> }} />
+        <Tab.Screen
+          name="Applications"
+          component={ApplicationsScreen}
+          options={{ title: "Applications", tabBarIcon: ({ color }) => <TabIcon symbol="◆" color={color} /> }}
+        />
+        <Tab.Screen
+          name="Documents"
+          component={DocumentsScreen}
+          options={{ tabBarIcon: ({ color }) => <TabIcon symbol="☰" color={color} /> }}
+        />
       </Tab.Navigator>
     </CitizenProvider>
   );

@@ -9,6 +9,7 @@ no key is configured, this also means the existing test suite (which runs with n
 never touches the vector store, keeping those tests side-effect-free.
 """
 
+import asyncio
 import logging
 
 from app.core.config import get_settings
@@ -29,17 +30,21 @@ async def attach_policy_citations(included: list[dict]) -> list[dict] | None:
         return None
     try:
         service = get_policy_service()
-        citations = []
-        for scheme in included:
-            result = await service.retrieve_policy_evidence(scheme["scheme_name"], top_k=CITATION_TOP_K)
-            if result.verified:
-                citations.append(
-                    {
-                        "scheme_id": scheme["scheme_id"],
-                        "scheme_name": scheme["scheme_name"],
-                        "evidence": [e.model_dump() for e in result.evidence],
-                    }
-                )
+        # Fired concurrently, not sequentially — each retrieval is an independent network call
+        # (per-scheme embedding lookup) with its own internal timeout, so awaiting them one at a
+        # time would multiply that timeout by the bundle size on every slow/degraded network.
+        results = await asyncio.gather(
+            *(service.retrieve_policy_evidence(scheme["scheme_name"], top_k=CITATION_TOP_K) for scheme in included)
+        )
+        citations = [
+            {
+                "scheme_id": scheme["scheme_id"],
+                "scheme_name": scheme["scheme_name"],
+                "evidence": [e.model_dump() for e in result.evidence],
+            }
+            for scheme, result in zip(included, results)
+            if result.verified
+        ]
         return citations or None
     except Exception:
         logger.warning("Policy citation attachment failed; bundle proceeds without it.", exc_info=True)
@@ -55,11 +60,14 @@ async def attach_document_evidence(checklist_items: list[dict]) -> list[dict]:
         return checklist_items
     try:
         service = get_policy_service()
-        enriched = []
-        for item in checklist_items:
-            result = await service.retrieve_policy_evidence(
-                f"{item['document_type']} document requirement", top_k=CITATION_TOP_K
+        results = await asyncio.gather(
+            *(
+                service.retrieve_policy_evidence(f"{item['document_type']} document requirement", top_k=CITATION_TOP_K)
+                for item in checklist_items
             )
+        )
+        enriched = []
+        for item, result in zip(checklist_items, results):
             item = dict(item)
             if result.verified:
                 item["evidence"] = [e.model_dump() for e in result.evidence]

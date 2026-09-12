@@ -33,4 +33,17 @@ class GrievanceOut(BaseModel):
     is_official_submission: bool
     """Always False in this prototype — internal platform ticket only (Section 11, rule 8)."""
     status: GrievanceStatus
+    resolution_note: str | None = None
+    resolved_at: datetime | None = None
     created_at: datetime
+
+
+class ResolveGrievanceRequest(BaseModel):
+    resolution_note: str
+
+    @field_validator("resolution_note")
+    @classmethod
+    def not_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("must not be blank")
+        return v

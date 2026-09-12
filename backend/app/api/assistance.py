@@ -10,6 +10,7 @@ from app.models.assistance import (
     CreateAssistanceSessionRequest,
     FormAssistanceRequest,
     FormAssistanceResponse,
+    FormAssistanceScreenshotRequest,
     ValidateSessionRequest,
     ValidateSessionResponse,
 )
@@ -41,6 +42,17 @@ async def validate_session(payload: ValidateSessionRequest, db: AsyncIOMotorData
     return await service.validate_session(db, payload.session_id, payload.origin)
 
 
+def _fallback_error_response(result: dict, retry_hint: str) -> FormAssistanceResponse:
+    return FormAssistanceResponse(
+        detected_language=result.get("detected_language", "en"),
+        question_meaning="We couldn't generate an explanation for this.",
+        what_information_is_expected="; ".join(result["errors"]),
+        confidence=0.0,
+        needs_clarification=True,
+        clarification_question=retry_hint,
+    )
+
+
 @router.post("/explain-text", response_model=FormAssistanceResponse)
 async def explain_text(
     payload: FormAssistanceRequest,
@@ -60,14 +72,31 @@ async def explain_text(
     }
     result = await graph.ainvoke(initial_state, config={"configurable": {"db": db}})
     if result.get("errors"):
-        return FormAssistanceResponse(
-            detected_language=result.get("detected_language", "en"),
-            question_meaning="We couldn't generate an explanation for this.",
-            what_information_is_expected="; ".join(result["errors"]),
-            confidence=0.0,
-            needs_clarification=True,
-            clarification_question="Could you try selecting the specific question text again?",
-        )
+        return _fallback_error_response(result, "Could you try selecting the specific question text again?")
+    return FormAssistanceResponse(**result["final_response"])
+
+
+@router.post("/explain-screenshot", response_model=FormAssistanceResponse)
+async def explain_screenshot(
+    payload: FormAssistanceScreenshotRequest,
+    session: dict = Depends(require_assistance_session),
+    db: AsyncIOMotorDatabase = Depends(get_db),
+):
+    """The screenshot-crop counterpart to /explain-text (Section 7 Option B). The image is
+    held only in memory for this one request — never written to disk, never logged, and never
+    stored in `assistance_feedback`/anywhere else (only the derived text explanation is)."""
+    graph = get_form_assistance_graph()
+    initial_state = {
+        "scheme_id": session["scheme_id"],
+        "screenshot_base64": payload.screenshot_base64,
+        "screenshot_mime_type": payload.mime_type,
+        "preferred_language": payload.preferred_language,
+        "errors": [],
+        "warnings": [],
+    }
+    result = await graph.ainvoke(initial_state, config={"configurable": {"db": db}})
+    if result.get("errors"):
+        return _fallback_error_response(result, "Could you try cropping a smaller, clearer region, or select the text directly instead?")
     return FormAssistanceResponse(**result["final_response"])
 
 

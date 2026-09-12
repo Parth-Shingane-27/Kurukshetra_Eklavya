@@ -2,7 +2,10 @@
 Mongo) to verify department resolution, and an unknown scheme to verify the honest "no
 department found" path (Section 7.3/11)."""
 
+from app.core.config import get_settings
 from app.modules.scheme_kb.service import seed_schemes_if_empty
+
+ADMIN_HEADERS = {"X-Admin-Token": get_settings().admin_credential}
 
 BASE_CITIZEN = {
     "name": "Test Citizen",
@@ -86,3 +89,77 @@ async def test_get_and_list_grievances(client, db):
     listed = await client.get(f"/api/grievances/citizen/{citizen_id}")
     assert listed.status_code == 200
     assert len(listed.json()) == 1
+
+
+async def test_admin_can_list_all_grievances(client, db):
+    await seed_schemes_if_empty(db)
+    citizen_id = await _create_citizen(client)
+    await client.post(
+        "/api/grievances",
+        json={"citizen_id": citizen_id, "category": "general", "description": "First ticket"},
+    )
+    await client.post(
+        "/api/grievances",
+        json={"citizen_id": citizen_id, "category": "delay", "description": "Second ticket"},
+    )
+
+    res = await client.get("/api/grievances", headers=ADMIN_HEADERS)
+    assert res.status_code == 200
+    assert len(res.json()) == 2
+
+
+async def test_non_admin_cannot_list_all_grievances(client, db):
+    res = await client.get("/api/grievances")
+    assert res.status_code in (401, 403)
+
+
+async def test_admin_can_resolve_grievance(client, db):
+    await seed_schemes_if_empty(db)
+    citizen_id = await _create_citizen(client)
+    created = await client.post(
+        "/api/grievances",
+        json={"citizen_id": citizen_id, "category": "general", "description": "text"},
+    )
+    grievance_id = created.json()["id"]
+
+    res = await client.post(
+        f"/api/grievances/{grievance_id}/resolve",
+        json={"resolution_note": "Contacted the department; issue resolved."},
+        headers=ADMIN_HEADERS,
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] == "resolved"
+    assert body["resolution_note"] == "Contacted the department; issue resolved."
+    assert body["resolved_at"] is not None
+
+
+async def test_cannot_resolve_already_resolved_grievance(client, db):
+    await seed_schemes_if_empty(db)
+    citizen_id = await _create_citizen(client)
+    created = await client.post(
+        "/api/grievances",
+        json={"citizen_id": citizen_id, "category": "general", "description": "text"},
+    )
+    grievance_id = created.json()["id"]
+    await client.post(
+        f"/api/grievances/{grievance_id}/resolve", json={"resolution_note": "Done."}, headers=ADMIN_HEADERS
+    )
+
+    res = await client.post(
+        f"/api/grievances/{grievance_id}/resolve", json={"resolution_note": "Again."}, headers=ADMIN_HEADERS
+    )
+    assert res.status_code == 400
+
+
+async def test_non_admin_cannot_resolve_grievance(client, db):
+    await seed_schemes_if_empty(db)
+    citizen_id = await _create_citizen(client)
+    created = await client.post(
+        "/api/grievances",
+        json={"citizen_id": citizen_id, "category": "general", "description": "text"},
+    )
+    grievance_id = created.json()["id"]
+
+    res = await client.post(f"/api/grievances/{grievance_id}/resolve", json={"resolution_note": "x"})
+    assert res.status_code in (401, 403)

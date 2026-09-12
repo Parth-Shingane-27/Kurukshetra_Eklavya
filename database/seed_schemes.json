@@ -25,6 +25,23 @@
           "Directly fetched https://pmkisan.gov.in/RegistrationFormupdated.aspx on 2026-09-11: confirmed a real, live 'NEW FARMER REGISTRATION FORM' hosted by the National Informatics Centre for the Dept. of Agriculture & Farmers Welfare, with Aadhaar/Mobile/State/CAPTCHA fields and an Aadhaar-Act consent section — not merely an HTTP 200 on the homepage."
         ]
       },
+      "guide": {
+        "guide_en": [
+          "Visit pmkisan.gov.in and open the 'Farmers Corner' menu.",
+          "Click 'New Farmer Registration' and enter your Aadhaar number, mobile number, and state.",
+          "Fill in your bank account details and land record details as prompted by the form.",
+          "Submit the form and note the reference/registration number shown on screen.",
+          "Track your application anytime under 'Beneficiary Status' using your Aadhaar or registration number."
+        ],
+        "guide_mr": [
+          "pmkisan.gov.in ला भेट द्या आणि 'Farmers Corner' मेनू उघडा.",
+          "'New Farmer Registration' वर क्लिक करा आणि आधार क्रमांक, मोबाईल क्रमांक व राज्य नमूद करा.",
+          "फॉर्ममध्ये विचारल्याप्रमाणे बँक खाते व जमिनीच्या नोंदीचा तपशील भरा.",
+          "फॉर्म सबमिट करा आणि स्क्रीनवर दिसणारा संदर्भ/नोंदणी क्रमांक नोंदवून ठेवा.",
+          "'Beneficiary Status' मध्ये आधार किंवा नोंदणी क्रमांक वापरून अर्जाची स्थिती कधीही तपासा."
+        ],
+        "video_url": null
+      },
       "rules": [
         { "field_name": "occupation", "operator": "=", "value": "farmer", "logical_group": "A" },
         { "field_name": "land_holding_acres", "operator": "<=", "value": 5, "logical_group": "A" }
@@ -161,6 +178,23 @@
           "The actual flow is two steps — a One-Time Registration (OTR) at /otrapplication/ using Aadhaar, then the scholarship application at /ApplicationForm/ — both under the confirmed-official scholarships.gov.in domain. The deep OTR page itself is a client-rendered SPA our fetch tool could not fully inspect, so the homepage (definitively confirmed) is used as application_url rather than an unverified deep link; renewal uses the same portal/OTR."
         ]
       },
+      "guide": {
+        "guide_en": [
+          "Visit scholarships.gov.in and complete the One-Time Registration (OTR) using your Aadhaar-linked mobile number.",
+          "Log in with your OTR credentials and select the applicable Post-Matric Scholarship scheme for SC/ST students from the list for your state and course.",
+          "Fill in personal, academic, bank, and category (SC/ST) details, and upload the required documents (caste certificate, income certificate, bonafide student certificate, marksheets).",
+          "Submit the application before your institution's verification deadline shown on the portal.",
+          "Your institution verifies the application on the portal first, followed by the state/central nodal department, before the scholarship amount is disbursed."
+        ],
+        "guide_mr": [
+          "scholarships.gov.in ला भेट द्या आणि आधार-लिंक्ड मोबाईल क्रमांकाने वन-टाइम रजिस्ट्रेशन (OTR) पूर्ण करा.",
+          "OTR क्रेडेन्शियल्स वापरून लॉगिन करा आणि तुमच्या राज्यासाठी व अभ्यासक्रमासाठी लागू असलेली SC/ST पोस्ट-मॅट्रिक शिष्यवृत्ती योजना निवडा.",
+          "वैयक्तिक, शैक्षणिक, बँक व प्रवर्ग (SC/ST) तपशील भरा आणि आवश्यक कागदपत्रे (जात प्रमाणपत्र, उत्पन्न प्रमाणपत्र, बोनाफाईड प्रमाणपत्र, गुणपत्रिका) अपलोड करा.",
+          "पोर्टलवर दर्शवलेल्या पडताळणी अंतिम तारखेपूर्वी अर्ज सादर करा.",
+          "प्रथम तुमची संस्था पोर्टलवर अर्ज पडताळते, त्यानंतर राज्य/केंद्रीय नोडल विभाग पडताळणी करतो, त्यानंतरच शिष्यवृत्तीची रक्कम वितरित होते."
+        ],
+        "video_url": null
+      },
       "rules": [
         { "field_name": "social_category", "operator": "in", "value": ["SC", "ST"], "logical_group": "A" },
         { "field_name": "education_level", "operator": "=", "value": "post_matric", "logical_group": "A" },
@@ -272,6 +306,347 @@
         { "document_type": "Aadhaar Card", "is_mandatory": true },
         { "document_type": "Education Certificate", "is_mandatory": true },
         { "document_type": "Employment Exchange Registration", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "pmjay_health_insurance",
+      "name": "Ayushman Bharat - Pradhan Mantri Jan Arogya Yojana (PM-JAY)",
+      "description": "Health insurance cover of up to Rs. 5 lakh per family per year for secondary and tertiary hospitalisation, for economically vulnerable families identified via SECC deprivation criteria, plus a no-income-limit Rs. 5 lakh cover for all citizens aged 70 and above (Ayushman Vay Vandana Card).",
+      "issuing_authority": "National Health Authority, Ministry of Health and Family Welfare",
+      "category": "Health & Insurance",
+      "benefit_type": "health_insurance",
+      "benefit_value_estimate": 500000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://pmjay.gov.in/",
+        "official_scheme_url": "https://pmjay.gov.in/",
+        "application_url": "https://beneficiary.nha.gov.in/",
+        "renewal_url": null,
+        "grievance_url": "https://pmjay.gov.in/",
+        "source_url": "https://pmjay.gov.in/",
+        "application_link_status": "unverified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched https://beneficiary.nha.gov.in/ on 2026-09-12: the tool could only extract the page title ('PMJAY - Beneficiary Portal') with no visible form fields, most likely because the beneficiary portal is a JavaScript-rendered single-page app our fetch tool could not fully inspect (the same limitation as the National Scholarship Portal's OTR page already noted in this file).",
+          "beneficiary.nha.gov.in is corroborated as the official National Health Authority beneficiary-registration/eligibility-check portal by multiple independent sources describing a mobile-OTP login and Aadhaar eKYC flow. Left 'unverified' rather than 'verified' since the actual page content could not be independently confirmed by this tool."
+        ]
+      },
+      "rules": [
+        { "field_name": "bpl_status", "operator": "=", "value": true, "logical_group": "A" },
+        { "field_name": "age", "operator": ">=", "value": 70, "logical_group": "B" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Ration Card/Family ID", "is_mandatory": true },
+        { "document_type": "Income Certificate", "is_mandatory": false }
+      ]
+    },
+    {
+      "seed_key": "pmjdy_bank_account",
+      "name": "Pradhan Mantri Jan Dhan Yojana (PMJDY)",
+      "description": "Zero-balance Basic Savings Bank Deposit (BSBD) account with a RuPay debit card, accident insurance cover, and overdraft facility, aimed at universal financial inclusion.",
+      "issuing_authority": "Department of Financial Services, Ministry of Finance",
+      "category": "Financial Inclusion & Banking",
+      "benefit_type": "bank_account_scheme",
+      "benefit_value_estimate": 200000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://pmjdy.gov.in/scheme",
+        "official_scheme_url": "https://pmjdy.gov.in/",
+        "application_url": null,
+        "renewal_url": null,
+        "grievance_url": "https://pmjdy.gov.in/",
+        "source_url": "https://pmjdy.gov.in/scheme",
+        "application_link_status": "not_available",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched https://pmjdy.gov.in/scheme on 2026-09-12 (a prior attempt at the 'www.' subdomain failed with a certificate hostname mismatch, since pmjdy.gov.in's certificate only covers the bare domain): confirmed this is the live, official Department of Financial Services PMJDY page.",
+          "Confirmed on that page: there is NO online account-opening application. It explicitly states a Basic Savings Bank Deposit account 'can be opened in any bank branch or Business Correspondent (Bank Mitra) outlet' — application_link_status is 'not_available' as a confirmed finding, not a research gap.",
+          "Eligibility is modeled here as universally available (no meaningful restriction beyond not already holding such an account, a field the Citizen profile does not track); this is an acknowledged scope simplification, not a fabricated rule."
+        ]
+      },
+      "rules": [
+        { "field_name": "age", "operator": ">=", "value": 10, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Address Proof", "is_mandatory": false }
+      ]
+    },
+    {
+      "seed_key": "pmuy_lpg_connection",
+      "name": "Pradhan Mantri Ujjwala Yojana (PMUY 2.0)",
+      "description": "Free deposit-free LPG gas connection (first refill and stove included) for adult women from poor households who do not already hold an LPG connection from any Oil Marketing Company.",
+      "issuing_authority": "Ministry of Petroleum and Natural Gas",
+      "category": "Women & Child Development",
+      "benefit_type": "in_kind_subsidy",
+      "benefit_value_estimate": 4000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://www.pmuy.gov.in/",
+        "official_scheme_url": "https://www.pmuy.gov.in/ujjwala2.html",
+        "application_url": "https://www.pmuy.gov.in/ujjwala2.html",
+        "renewal_url": null,
+        "grievance_url": "https://www.pmuy.gov.in/",
+        "source_url": "https://www.pmuy.gov.in/ujjwala2.html",
+        "application_link_status": "verified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched https://www.pmuy.gov.in/ujjwala2.html on 2026-09-12: confirmed a real, live Ministry of Petroleum & Natural Gas page for 'Ujjwala 2.0' listing exact eligibility (adult woman, no existing OMC LPG connection, deprivation-declaration-based poor household) and the required KYC/document categories, plus downloadable PDF application forms.",
+          "This confirmed page has no single embedded form; instead it links out to three separate Oil Marketing Company portals (Indian Oil, Bharat Gas, HP Gas) to actually submit the connection request. application_url points to this verified gateway page rather than to one specific OMC's portal, since the correct downstream destination depends on which OMC distributor serves the applicant's area."
+        ]
+      },
+      "rules": [
+        { "field_name": "gender", "operator": "=", "value": "female", "logical_group": "A" },
+        { "field_name": "age", "operator": ">=", "value": 18, "logical_group": "A" },
+        { "field_name": "bpl_status", "operator": "=", "value": true, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "BPL Ration Card/Deprivation Declaration", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "pmmvy_maternity_benefit",
+      "name": "Pradhan Mantri Matru Vandana Yojana (PMMVY)",
+      "description": "Cash maternity benefit paid directly to pregnant and lactating mothers for their first living child, partially compensating wage loss and supporting maternal and child health/nutrition.",
+      "issuing_authority": "Ministry of Women and Child Development",
+      "category": "Women & Child Development",
+      "benefit_type": "cash_transfer",
+      "benefit_value_estimate": 5000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://pmmvy.wcd.gov.in/",
+        "official_scheme_url": "https://pmmvy.wcd.gov.in/",
+        "application_url": "https://pmmvy.wcd.gov.in/",
+        "renewal_url": null,
+        "grievance_url": "https://pmmvy.wcd.gov.in/",
+        "source_url": "https://pmmvy.wcd.gov.in/",
+        "application_link_status": "verified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched https://pmmvy.wcd.gov.in/ on 2026-09-12: confirmed the live, official Ministry of Women & Child Development portal, showing genuinely current running statistics ('5.19 Cr. Beneficiaries Enrolled', 'Rs. 20,677 Cr. Total Amount Paid', dated 31 Aug 2026), a Citizen Login section, 'Track Application Status', and a grievance module — not merely an HTTP 200 on an unrelated page.",
+          "The actual beneficiary application form sits behind the Citizen Login (mobile-OTP based) as a client-rendered page this tool could not inspect further, so — matching this file's existing treatment of the National Scholarship Portal's OTR flow — the confirmed-live homepage is used as application_url rather than an unverified deep link.",
+          "Eligibility is modeled using gender and a plausible reproductive age band, since the Citizen profile has no pregnancy/live-birth-parity field to express 'first child' or 'currently pregnant/lactating' directly; this is an acknowledged scope simplification, not a fabricated rule."
+        ]
+      },
+      "rules": [
+        { "field_name": "gender", "operator": "=", "value": "female", "logical_group": "A" },
+        { "field_name": "age", "operator": ">=", "value": 19, "logical_group": "A" },
+        { "field_name": "age", "operator": "<=", "value": 45, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true },
+        { "document_type": "Mother-Child Protection Card", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "atal_pension_yojana",
+      "name": "Atal Pension Yojana (APY)",
+      "description": "Government-guaranteed monthly pension (Rs. 1,000 to Rs. 5,000) after age 60 for subscribers in the unorganised sector, funded by regular contributions made during their working years.",
+      "issuing_authority": "Pension Fund Regulatory and Development Authority (PFRDA), via Protean eGov Technologies (NPS-CRA)",
+      "category": "Financial Inclusion & Banking",
+      "benefit_type": "monthly_pension",
+      "benefit_value_estimate": 60000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://npscra.proteantech.in/scheme-details.php",
+        "official_scheme_url": "https://npscra.proteantech.in/scheme-details.php",
+        "application_url": "https://enps.nps-proteantech.in/eNPS/ApySubRegistration.html",
+        "renewal_url": null,
+        "grievance_url": "https://npscra.proteantech.in/scheme-details.php",
+        "source_url": "https://npscra.proteantech.in/scheme-details.php",
+        "application_link_status": "verified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched https://enps.nps-proteantech.in/eNPS/ApySubRegistration.html on 2026-09-12: confirmed a real, live 'New Registration' form for Atal Pension Yojana with bank selection, IFSC/account-number fields, Aadhaar/Virtual-ID or Offline-KYC-XML upload, pension-amount slab selection (Rs. 1,000-5,000), contribution periodicity, and OTP/CAPTCHA — a genuine citizen-facing application form, not just a homepage.",
+          "The informational domain has migrated from npscra.nsdl.co.in to npscra.proteantech.in (both operated by Protean eGov Technologies, the NPS Central Recordkeeping Agency) per current search results; proteantech.in is used here as the current live domain, matching this file's existing practice of preferring a domain confirmed live over one that may be stale (see disability_pension's depwd.gov.in note)."
+        ]
+      },
+      "rules": [
+        { "field_name": "age", "operator": ">=", "value": 18, "logical_group": "A" },
+        { "field_name": "age", "operator": "<=", "value": 40, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "pmegp_self_employment",
+      "name": "Prime Minister's Employment Generation Programme (PMEGP)",
+      "description": "Credit-linked capital subsidy (15-35% margin money) on a bank loan for setting up a new micro-enterprise in the manufacturing or service sector, generating self-employment.",
+      "issuing_authority": "Khadi and Village Industries Commission (KVIC), Ministry of Micro, Small and Medium Enterprises",
+      "category": "Skills & Employment",
+      "benefit_type": "loan_subsidy",
+      "benefit_value_estimate": 250000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://www.msme.gov.in/1-prime-ministers-employment-generation-programme-pmegp",
+        "official_scheme_url": "https://www.kviconline.gov.in/pmegpeportal/pmegphome/index.jsp",
+        "application_url": "https://www.kviconline.gov.in/pmegpeportal/",
+        "renewal_url": null,
+        "grievance_url": null,
+        "source_url": "https://www.msme.gov.in/1-prime-ministers-employment-generation-programme-pmegp",
+        "application_link_status": "unverified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Two direct fetch attempts (kviconline.gov.in/pmegpeportal/pmegphome/index.jsp and kviconline.gov.in/pmegp/pmegpweb/) both failed with a DNS/connection timeout (getaddrinfo ETIMEOUT) from this tool, so the actual application page content could not be independently inspected.",
+          "kviconline.gov.in/pmegpeportal is corroborated as the official KVIC e-portal by the Ministry of MSME's own site (msme.gov.in) and multiple independent sources describing an 'Application For New Unit' -> 'Apply' flow; left 'unverified' rather than 'verified' since this tool could not directly confirm the live page itself."
+        ]
+      },
+      "rules": [
+        { "field_name": "age", "operator": ">=", "value": 18, "logical_group": "A" },
+        { "field_name": "employment_status", "operator": "=", "value": "unemployed", "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Project Report", "is_mandatory": true },
+        { "document_type": "Education Certificate", "is_mandatory": false },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "eshram_registration",
+      "name": "e-Shram - National Database of Unorganised Workers",
+      "description": "Registration of unorganised-sector workers (aged 16-59) onto a national database, issuing a UAN-linked e-Shram card that acts as a gateway to social security and welfare scheme benefits, bundled with a limited-period accident insurance cover.",
+      "issuing_authority": "Ministry of Labour and Employment",
+      "category": "Skills & Employment",
+      "benefit_type": "registration_gateway",
+      "benefit_value_estimate": 200000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://eshram.gov.in/",
+        "official_scheme_url": "https://eshram.gov.in/",
+        "application_url": "https://register.eshram.gov.in/",
+        "renewal_url": null,
+        "grievance_url": "https://eshram.gov.in/",
+        "source_url": "https://eshram.gov.in/",
+        "application_link_status": "unverified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched https://eshram.gov.in/ on 2026-09-12: confirmed a real, live Ministry of Labour & Employment language-selection landing page linking into the main portal.",
+          "Directly fetched https://register.eshram.gov.in/ on 2026-09-12: the response was only a version string ('NDUW_Meg 2.6.0') with no visible Aadhaar/OTP form fields, most likely because this registration subdomain is a JavaScript-rendered single-page app our fetch tool could not fully inspect. The domain is corroborated as official by india.gov.in and the eShram FAQ page, but left 'unverified' since the actual registration form could not be independently confirmed.",
+          "Eligibility is modeled using an age band only, since the Citizen profile has no field distinguishing 'organised' vs 'unorganised sector worker' status; this is an acknowledged scope simplification."
+        ]
+      },
+      "rules": [
+        { "field_name": "age", "operator": ">=", "value": 18, "logical_group": "A" },
+        { "field_name": "age", "operator": "<=", "value": 59, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "pmfby_crop_insurance",
+      "name": "Pradhan Mantri Fasal Bima Yojana (PMFBY)",
+      "description": "Low-premium crop insurance (farmer pays 2% of sum insured for Kharif, 1.5% for Rabi, 5% for commercial/horticulture crops, government covers the remainder) covering yield losses from non-preventable natural risks for farmers growing notified crops in notified areas.",
+      "issuing_authority": "Ministry of Agriculture and Farmers Welfare",
+      "category": "Agriculture,Rural & Environment",
+      "benefit_type": "insurance_subsidy",
+      "benefit_value_estimate": 50000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://pmfby.gov.in/",
+        "official_scheme_url": "https://pmfby.gov.in/",
+        "application_url": "https://pmfby.gov.in/",
+        "renewal_url": "https://pmfby.gov.in/",
+        "grievance_url": "https://pmfby.gov.in/",
+        "source_url": "https://pmfby.gov.in/",
+        "application_link_status": "unverified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Two direct fetch attempts (the homepage, and a guessed /farmerRegistrationForm path) both returned only the page title with no body content our fetch tool could extract, most likely because the site is a JavaScript-rendered single-page app; the guessed sub-path was not thereby confirmed to exist and is not used anywhere in this entry.",
+          "pmfby.gov.in is corroborated as the correct, current official Ministry of Agriculture & Farmers Welfare domain by MyGov.in and multiple independent sources describing farmer registration via the site itself or the 'Crop Insurance' mobile app. Left 'unverified' rather than 'verified' since the actual registration page content could not be independently confirmed by this tool."
+        ]
+      },
+      "rules": [
+        { "field_name": "occupation", "operator": "=", "value": "farmer", "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Land Ownership Record (Khasra/Khatauni)", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "stand_up_india_loan",
+      "name": "Stand-Up India Scheme",
+      "description": "Bank loans of Rs. 10 lakh to Rs. 1 crore for setting up a new greenfield enterprise (manufacturing, services, trading, or agri-allied activities), reserved for Scheduled Caste/Scheduled Tribe and women entrepreneurs.",
+      "issuing_authority": "Department of Financial Services, Ministry of Finance",
+      "category": "Financial Inclusion & Banking",
+      "benefit_type": "loan_subsidy",
+      "benefit_value_estimate": 1000000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://www.standupmitra.in/",
+        "official_scheme_url": "https://www.standupmitra.in/",
+        "application_url": "https://www.standupmitra.in/",
+        "renewal_url": null,
+        "grievance_url": null,
+        "source_url": "https://www.standupmitra.in/",
+        "application_link_status": "unverified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched https://www.standupmitra.in/ on 2026-09-12: confirmed a real, live official Department of Financial Services portal, showing genuinely current running statistics ('299,274 total applications', '275,291 sanctioned') and detailed impact-story case studies — not merely an HTTP 200 on an unrelated page.",
+          "The homepage itself did not expose a visible 'Register' form in what our fetch tool could extract (independent sources describe the actual registration/questionnaire flow as reachable via a 'Register' button leading to a Ready/Trainee Borrower questionnaire), so the deeper application flow could not be independently confirmed — left 'unverified' rather than 'verified', and application_url points to this confirmed-live homepage rather than an unverified deep link."
+        ]
+      },
+      "rules": [
+        { "field_name": "social_category", "operator": "in", "value": ["SC", "ST"], "logical_group": "A" },
+        { "field_name": "gender", "operator": "=", "value": "female", "logical_group": "B" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Caste Certificate", "is_mandatory": false },
+        { "document_type": "Project Report/Business Plan", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "pmjjby_life_insurance",
+      "name": "Pradhan Mantri Jeevan Jyoti Bima Yojana (PMJJBY)",
+      "description": "Renewable one-year life insurance cover of Rs. 2 lakh for death due to any cause, available to bank/post-office account holders aged 18-50, at an annual premium of Rs. 436 auto-debited from the linked account.",
+      "issuing_authority": "Department of Financial Services, Ministry of Finance (administered via participating banks/insurers)",
+      "category": "Financial Inclusion & Banking",
+      "benefit_type": "life_insurance",
+      "benefit_value_estimate": 200000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://www.jansuraksha.gov.in/",
+        "official_scheme_url": "https://www.jansuraksha.gov.in/",
+        "application_url": "https://jansuraksha.gov.in/Files/PMJJBY/English/ApplicationForm.pdf",
+        "renewal_url": null,
+        "grievance_url": "https://www.jansuraksha.gov.in/",
+        "source_url": "https://www.jansuraksha.gov.in/",
+        "application_link_status": "unverified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Three direct fetch attempts (https://www.jansuraksha.gov.in/, https://jansuraksha.in/pmjjbyScheme, and the scheme's own application-form PDF) each failed or were inconclusive: two returned certificate-validation errors and one returned only a page header with no body content our fetch tool could extract — none could be independently read by this tool.",
+          "Multiple independent corroborating sources (govtschemes.in, myscheme.gov.in, india.gov.in's own hosted copy of the application-form PDF, participating banks) consistently describe PMJJBY enrollment as done via a paper application form submitted to the subscriber's own bank branch or post office for auto-debit consent, not via a citizen self-service web application. This is treated as strong but not first-hand-confirmed evidence, so 'unverified' is used rather than 'not_available' or 'verified'."
+        ]
+      },
+      "rules": [
+        { "field_name": "age", "operator": ">=", "value": 18, "logical_group": "A" },
+        { "field_name": "age", "operator": "<=", "value": 50, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
         { "document_type": "Bank Passbook", "is_mandatory": true }
       ]
     }

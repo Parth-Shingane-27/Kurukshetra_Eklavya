@@ -105,6 +105,54 @@ the original 8 agents (see plan.md Section 11), and each is additive — none of
   human-review interrupt/resume cycle for document verification and fraud screening
   (`app/graph/workflow.py`).
 
+## Context-Aware Form Assistance (browser extension + mobile toggle)
+
+A browser extension and a mobile in-app WebView screen that explain a confusing scheme
+application form question in plain language (text + voice, and now text-selection **or** a
+cropped screenshot) — but **only** on a page reached through this platform's own verified
+"Apply Now" link, never as a general-purpose assistant on arbitrary websites. See
+`extension/README.md` for the full design (session handshake, why it needs the `<all_urls>`
+host permission but never uses it outside a session-marked page, privacy notes, and
+honestly-listed limitations — RAG grounding depends on the vector store actually being built).
+
+## Maharashtra representative seed set (A-011)
+
+`database/seed_schemes_maharashtra.json` — 5 real, named Maharashtra/MahaDBT-aligned schemes
+(MahaDBT EBC tuition waiver, Dr. Punjabrao Deshmukh hostel allowance, Namo Shetkari top-up,
+Sanjay Gandhi Niradhar Anudan pension, Ramai Awas Gharkul housing), each with `links` populated
+by directly fetching the official domain rather than trusting a search snippet (see the file's
+own `verification_notes` per scheme). Deliberately a *second*, separate seed file from
+`database/seed_schemes.json` — not merged, and not loaded automatically on startup:
+
+```bash
+cd backend && ./.venv/Scripts/python.exe scripts/seed_maharashtra.py   # or the Unix venv path
+```
+
+Safe to re-run — inserts only schemes not already present by name. PM-KISAN is intentionally
+*not* repeated here even though it was part of the original six-scheme concept, since it's
+already in `seed_schemes.json`. Ramai Awas Gharkul shares the `housing_subsidy` conflict group
+with `seed_schemes.json`'s own PMAY-Rural/State Rural Housing Assistance pair — conflict groups
+are just a shared string, not scoped to one file, so once both files are loaded a citizen
+eligible for schemes from both sets still gets a correctly resolved, non-overlapping bundle
+(verified live against a real MongoDB Atlas cluster, not just the test suite).
+
+Load it: `chrome://extensions` → enable Developer mode → Load unpacked → select `extension/`.
+The mobile counterpart (`mobile/src/screens/ApplicationWebViewScreen.js`) opens applications in
+an in-app WebView with the same session handshake, since a phone's external system browser
+can't be read/controlled by the app at all.
+
+New backend surface: `POST /api/assistance/session`, `/validate-session`, `/explain-text`,
+`/feedback`, `GET /api/assistance/languages` (`app/api/assistance.py`), backed by a dedicated
+LangGraph workflow (`app/graph/form_assistance_workflow.py`) that reuses the existing RAG
+(`app/rag/policy_service.py`) and Multi-language Chat Agent services rather than
+reimplementing them.
+
+Each scheme's `links` (see `SchemeLinks` in `app/models/scheme.py`) now separately tracks a
+policy page, official homepage, application form, renewal portal, and grievance portal — never
+one conflated URL — plus an `application_link_status` (`verified` / `unverified` /
+`not_available` / `state_specific`) and verification notes, so the UI never presents an
+unverified or nonexistent online application as if it were official.
+
 ## Database
 
 - `database/seed_schemes.json` — sample scheme knowledge base (loaded into MongoDB on backend
@@ -134,6 +182,12 @@ The E2E test targets the production preview build (port 4173) rather than the de
 default, since React StrictMode's dev-only double-effect-invocation would otherwise double
 every write the journey makes. Override with `E2E_BASE_URL=http://localhost:5173` to run
 against the dev server instead.
+
+`admin.spec.js` logs in as a real admin account via the backend API directly (register →
+login → verify-otp), not through the UI, since the UI login needs a real OTP email — this only
+works if `backend/.env`'s `RESEND_API_KEY` is **unset** when running the suite (falling back to
+`debug_otp`, see `app/core/email_sender.py`); with a real key configured, that test fails with a
+clear message explaining why rather than hanging.
 
 ## Status
 

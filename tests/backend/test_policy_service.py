@@ -156,3 +156,20 @@ async def test_retrieve_grievance_procedure_honest_when_nothing_found(policy_ser
     result = await policy_service.retrieve_grievance_procedure(scheme_id="999", db=db)
     assert result.verified is False
     assert "internal platform ticket" in (result.note or "")
+
+
+async def test_retrieve_policy_evidence_degrades_gracefully_on_vector_store_error(policy_service, monkeypatch):
+    """A vector-store-level failure (e.g. a transient conflict with a concurrent ingestion
+    process writing to the same Chroma persist directory) must degrade exactly like every
+    other external-dependency failure in this app — never raise past this service, never a
+    raw 500 at the API layer."""
+
+    def _broken_retrieve(*args, **kwargs):
+        raise RuntimeError("simulated Chroma internal error")
+
+    monkeypatch.setattr(policy_service._retriever, "retrieve", _broken_retrieve)
+
+    result = await policy_service.retrieve_policy_evidence("fisherman relief assistance")
+    assert result.verified is False
+    assert result.evidence == []
+    assert result.note

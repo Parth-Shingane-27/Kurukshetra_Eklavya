@@ -42,6 +42,9 @@ async def screen_citizen_for_fraud(
         "indicators": screening["indicators"],
         "human_review_required": screening["human_review_required"],
         "summary": summary,
+        "reviewed": False,
+        "reviewer_notes": None,
+        "reviewed_at": None,
         "created_at": datetime.now(timezone.utc),
     }
     result = await db.fraud_flags.insert_one(doc)
@@ -70,3 +73,36 @@ async def list_fraud_flags_for_citizen(db: AsyncIOMotorDatabase, citizen_id: str
     await get_citizen(db, citizen_id)  # raises 404
     cursor = db.fraud_flags.find({"citizen_id": ObjectId(citizen_id)}).sort("created_at", -1)
     return [_serialize(doc) async for doc in cursor]
+
+
+async def list_fraud_flags(
+    db: AsyncIOMotorDatabase, risk_level: str | None = None, reviewed: bool | None = None
+) -> list[dict]:
+    """Admin-only review queue across every citizen's fraud flags."""
+    query: dict = {}
+    if risk_level:
+        query["risk_level"] = risk_level
+    if reviewed is not None:
+        query["reviewed"] = reviewed
+    cursor = db.fraud_flags.find(query).sort("created_at", -1)
+    return [_serialize(doc) async for doc in cursor]
+
+
+async def review_fraud_flag(db: AsyncIOMotorDatabase, flag_id: str, reviewer_notes: str) -> dict:
+    try:
+        oid = ObjectId(flag_id)
+    except (InvalidId, TypeError):
+        raise HTTPException(status_code=404, detail="Fraud flag not found")
+    doc = await db.fraud_flags.find_one({"_id": oid})
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Fraud flag not found")
+    if doc.get("reviewed"):
+        raise HTTPException(status_code=400, detail="Fraud flag has already been reviewed")
+
+    now = datetime.now(timezone.utc)
+    await db.fraud_flags.update_one(
+        {"_id": oid},
+        {"$set": {"reviewed": True, "reviewer_notes": reviewer_notes, "reviewed_at": now}},
+    )
+    updated = await db.fraud_flags.find_one({"_id": oid})
+    return _serialize(updated)

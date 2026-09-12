@@ -122,15 +122,81 @@ async def test_login_token_cannot_be_used_as_an_assistance_token(client):
     login_res = await client.post(
         "/api/auth/login", json={"email": "assist_cross@example.com", "password": "s3cret-pass"}
     )
-    body = login_res.json()
-    verify_res = await client.post(
-        "/api/auth/verify-otp", json={"pending_token": body["pending_token"], "code": body["debug_otp"]}
-    )
-    login_token = verify_res.json()["access_token"]
+    login_token = login_res.json()["access_token"]
 
     res = await client.post(
         "/api/assistance/explain-text",
         json={"field_label": "Annual family income"},
         headers={"Authorization": f"Bearer {login_token}", "X-Assistance-Origin": "https://example-gov-portal.test"},
+    )
+    assert res.status_code == 401
+
+
+async def _get_assistance_token(client, scheme_id):
+    session_id = (await client.post("/api/assistance/session", json={"scheme_id": scheme_id})).json()["session_id"]
+    validated = await client.post(
+        "/api/assistance/validate-session",
+        json={"session_id": session_id, "origin": "https://example-gov-portal.test"},
+    )
+    return validated.json()["assistance_token"]
+
+
+async def test_explain_screenshot_with_no_gemini_key_returns_honest_clarification(client):
+    """No GEMINI_API_KEY is configured in the test environment — transcription can't happen,
+    so this must degrade to an honest "couldn't read it" response, never a fabricated
+    explanation of an image the backend never actually looked at."""
+    scheme_id = await _create_scheme(client, VERIFIED_SCHEME)
+    token = await _get_assistance_token(client, scheme_id)
+
+    tiny_png_base64 = (
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    )
+    res = await client.post(
+        "/api/assistance/explain-screenshot",
+        json={"screenshot_base64": tiny_png_base64, "mime_type": "image/png"},
+        headers={"Authorization": f"Bearer {token}", "X-Assistance-Origin": "https://example-gov-portal.test"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["needs_clarification"] is True
+    assert body["confidence"] == 0.0
+
+
+async def test_explain_screenshot_rejects_oversized_image(client):
+    scheme_id = await _create_scheme(client, VERIFIED_SCHEME)
+    token = await _get_assistance_token(client, scheme_id)
+
+    settings = get_settings()
+    # Comfortably over the configured limit once base64-decoded.
+    oversized_raw = b"0" * (settings.assistance_screenshot_max_bytes + 1000)
+    import base64
+
+    oversized_base64 = base64.b64encode(oversized_raw).decode()
+
+    res = await client.post(
+        "/api/assistance/explain-screenshot",
+        json={"screenshot_base64": oversized_base64, "mime_type": "image/png"},
+        headers={"Authorization": f"Bearer {token}", "X-Assistance-Origin": "https://example-gov-portal.test"},
+    )
+    assert res.status_code == 422
+
+
+async def test_explain_screenshot_rejects_invalid_base64(client):
+    scheme_id = await _create_scheme(client, VERIFIED_SCHEME)
+    token = await _get_assistance_token(client, scheme_id)
+
+    res = await client.post(
+        "/api/assistance/explain-screenshot",
+        json={"screenshot_base64": "not-valid-base64!!!", "mime_type": "image/png"},
+        headers={"Authorization": f"Bearer {token}", "X-Assistance-Origin": "https://example-gov-portal.test"},
+    )
+    assert res.status_code == 422
+
+
+async def test_explain_screenshot_requires_valid_assistance_session(client):
+    res = await client.post(
+        "/api/assistance/explain-screenshot",
+        json={"screenshot_base64": "aGVsbG8=", "mime_type": "image/png"},
+        headers={"X-Assistance-Origin": "https://example-gov-portal.test"},
     )
     assert res.status_code == 401

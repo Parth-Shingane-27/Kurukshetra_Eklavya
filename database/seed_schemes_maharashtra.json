@@ -1,0 +1,222 @@
+{
+  "_comment": "A-011: Maharashtra/MahaDBT-aligned representative scheme set — a SECOND, DISTINCT seed file from seed_schemes.json, loaded into the SAME `schemes` collection via a separate, explicit script (backend/scripts/seed_maharashtra.py), not on every backend startup. `links` fields were populated by directly fetching each official domain (not trusting a search-engine snippet) on 2026-09-12 — see each scheme's verification_notes for what was actually confirmed. PM-KISAN is deliberately NOT repeated here even though it was part of the original hackathon pitch's six-scheme list — it already exists in seed_schemes.json (seed_key 'pm_kisan'), and re-adding it under a different seed_key would create a duplicate scheme in the same live collection. `conflict_group: \"housing_subsidy\"` on Ramai Awas Gharkul Yojana is intentional and will correctly interact with seed_schemes.json's own pmay_housing/state_housing_subsidy conflict group (BR-005 conflict groups are just a shared string, not scoped to one seed file) once both files have been loaded into the same collection.",
+
+  "schemes": [
+    {
+      "seed_key": "maha_ebc_tuition_waiver",
+      "name": "MahaDBT EBC Tuition & Examination Fee Waiver",
+      "description": "Tuition and examination fee waiver for Economically Backward Class students studying in government/government-aided institutions in Maharashtra.",
+      "issuing_authority": "Department of Higher and Technical Education, Government of Maharashtra",
+      "category": "Education & Learning",
+      "benefit_type": "fee_waiver",
+      "benefit_value_estimate": 20000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://mahadbt.maharashtra.gov.in/",
+        "official_scheme_url": "https://mahadbt.maharashtra.gov.in/",
+        "application_url": "https://mahadbt.maharashtra.gov.in/",
+        "renewal_url": "https://mahadbt.maharashtra.gov.in/",
+        "grievance_url": null,
+        "source_url": "https://mahadbt.maharashtra.gov.in/",
+        "application_link_status": "verified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched mahadbt.maharashtra.gov.in on 2026-09-12: confirmed the official Maharashtra DBT portal, with EBC-related scheme entries (e.g. 'Rajarshi Chhatrapati Shahu Maharaj Shikshan Shulkh Shishyavrutti Yojna(EBC)') listed under the education department, plus live registration/login sections — not merely an HTTP 200 on an unrelated homepage."
+        ]
+      },
+      "guide": {
+        "guide_en": [
+          "Visit mahadbt.maharashtra.gov.in and register/log in using your Aadhaar-linked mobile number.",
+          "From the scholarship list, select the EBC (Economically Backward Class) Tuition & Examination Fee Waiver scheme matching your course.",
+          "Fill in personal, family income, and institution details, and upload your income certificate, category certificate (if applicable), and bonafide student certificate.",
+          "Submit the application; your college/institute verifies it on the portal before it moves to the department for approval and disbursal."
+        ],
+        "guide_mr": [
+          "mahadbt.maharashtra.gov.in ला भेट द्या आणि आधार-लिंक्ड मोबाईल क्रमांकाने नोंदणी/लॉगिन करा.",
+          "शिष्यवृत्ती यादीतून तुमच्या अभ्यासक्रमासाठी लागू असलेली EBC (आर्थिकदृष्ट्या मागास वर्ग) शिक्षण व परीक्षा शुल्क माफी योजना निवडा.",
+          "वैयक्तिक, कौटुंबिक उत्पन्न व संस्थेचा तपशील भरा आणि उत्पन्न प्रमाणपत्र, प्रवर्ग प्रमाणपत्र (लागू असल्यास) व बोनाफाईड प्रमाणपत्र अपलोड करा.",
+          "अर्ज सादर करा; तुमचे महाविद्यालय/संस्था प्रथम पोर्टलवर पडताळणी करते, त्यानंतर विभाग मंजुरी व वितरण करतो."
+        ],
+        "video_url": null
+      },
+      "rules": [
+        { "field_name": "state", "operator": "=", "value": "Maharashtra", "logical_group": "A" },
+        { "field_name": "annual_income", "operator": "<=", "value": 800000, "logical_group": "A" },
+        { "field_name": "education_level", "operator": "in", "value": ["undergraduate", "postgraduate"], "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Income Certificate", "is_mandatory": true },
+        { "document_type": "Bonafide/Admission Certificate", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "maha_punjabrao_deshmukh_hostel",
+      "name": "Dr. Punjabrao Deshmukh Hostel Maintenance Allowance",
+      "description": "Hostel/maintenance allowance for students in professional higher-education courses who could not secure a government hostel seat and live in a private hostel, rented room, or PG.",
+      "issuing_authority": "Department of Higher and Technical Education, Government of Maharashtra",
+      "category": "Education & Learning",
+      "benefit_type": "hostel_allowance",
+      "benefit_value_estimate": 20000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://mahadbt.maharashtra.gov.in/",
+        "official_scheme_url": "https://mahadbt.maharashtra.gov.in/",
+        "application_url": "https://mahadbt.maharashtra.gov.in/",
+        "renewal_url": "https://mahadbt.maharashtra.gov.in/",
+        "grievance_url": null,
+        "source_url": "https://mahadbt.maharashtra.gov.in/",
+        "application_link_status": "verified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched mahadbt.maharashtra.gov.in on 2026-09-12: confirmed 'Dr Panjabrao Deshmukh Hostel Maintenance Allowance' listed under the Medical/Higher Education department, on the same live, official portal verified for the EBC scheme above.",
+          "The real eligibility distinguishes a higher allowance for children of registered laborers/marginal farmers (₹20,000-30,000/year depending on city) from a lower income-based tier (family income < ₹8,00,000) — this seed only models the income-based branch, since the Citizen profile has no 'parent occupation is registered laborer' field; not a fabricated simplification, an explicitly acknowledged scope limitation."
+        ]
+      },
+      "guide": {
+        "guide_en": [
+          "Visit mahadbt.maharashtra.gov.in and register/log in using your Aadhaar-linked mobile number.",
+          "Select 'Dr Panjabrao Deshmukh Hostel Maintenance Allowance' from the scholarship list under the Higher/Technical Education department.",
+          "Fill in personal, family income, and current accommodation details, and upload proof that you could not get a government hostel seat along with your rent/PG receipt.",
+          "Submit the application; your institute verifies it on the portal before it moves to the department for approval."
+        ],
+        "guide_mr": [
+          "mahadbt.maharashtra.gov.in ला भेट द्या आणि आधार-लिंक्ड मोबाईल क्रमांकाने नोंदणी/लॉगिन करा.",
+          "उच्च व तंत्रशिक्षण विभागाच्या यादीतून 'डॉ. पंजाबराव देशमुख वसतिगृह निर्वाह भत्ता' योजना निवडा.",
+          "वैयक्तिक, कौटुंबिक उत्पन्न व सध्याच्या निवासाचा तपशील भरा आणि शासकीय वसतिगृहात जागा न मिळाल्याचा पुरावा व भाडे/पीजी पावती अपलोड करा.",
+          "अर्ज सादर करा; तुमची संस्था प्रथम पोर्टलवर पडताळणी करते, त्यानंतर विभाग मंजुरी देतो."
+        ],
+        "video_url": null
+      },
+      "rules": [
+        { "field_name": "state", "operator": "=", "value": "Maharashtra", "logical_group": "A" },
+        { "field_name": "annual_income", "operator": "<=", "value": 800000, "logical_group": "A" },
+        { "field_name": "education_level", "operator": "in", "value": ["undergraduate", "postgraduate"], "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Income Certificate", "is_mandatory": true },
+        { "document_type": "Bonafide/Admission Certificate", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "maha_namo_shetkari",
+      "name": "Namo Shetkari Maha Sanman Nidhi Yojana",
+      "description": "Maharashtra state top-up matching PM-KISAN, giving an additional ₹6,000/year to the same eligible farmer families (₹12,000/year combined with PM-KISAN).",
+      "issuing_authority": "Department of Agriculture, Government of Maharashtra",
+      "category": "Agriculture,Rural & Environment",
+      "benefit_type": "cash_transfer",
+      "benefit_value_estimate": 6000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://nsmny.mahait.org/",
+        "official_scheme_url": "https://nsmny.mahait.org/",
+        "application_url": null,
+        "renewal_url": null,
+        "grievance_url": "https://nsmny.mahait.org/",
+        "source_url": "https://nsmny.mahait.org/",
+        "application_link_status": "not_available",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched nsmny.mahait.org on 2026-09-12: confirmed a real, live, official Maharashtra IT authority-hosted site for this scheme.",
+          "Confirmed on that page: there is NO separate application form. This scheme auto-enrolls existing PM-KISAN beneficiaries who meet Maharashtra-specific criteria — the site's own content is a beneficiary-status/login/grievance portal ('Beneficiary Status', 'Track On', 'Online Refund'), not a new-application gateway. application_link_status is 'not_available' as a confirmed finding (mirrors PMAY-G's own auto-enrollment pattern in seed_schemes.json), not a research gap."
+        ]
+      },
+      "rules": [
+        { "field_name": "state", "operator": "=", "value": "Maharashtra", "logical_group": "A" },
+        { "field_name": "occupation", "operator": "=", "value": "farmer", "logical_group": "A" },
+        { "field_name": "land_holding_acres", "operator": "<=", "value": 5, "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Land Ownership Record (Khasra/Khatauni)", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "maha_sanjay_gandhi_niradhar",
+      "name": "Sanjay Gandhi Niradhar Anudan Yojana",
+      "description": "Monthly pension for destitute, disabled, widowed, or seriously ill persons aged 18-65 with very low family income.",
+      "issuing_authority": "Social Justice and Special Assistance Department, Government of Maharashtra",
+      "category": "Social welfare & Empowerment",
+      "benefit_type": "monthly_pension",
+      "benefit_value_estimate": 18000,
+      "conflict_group": null,
+      "is_active": true,
+      "links": {
+        "policy_url": "https://sjsa.maharashtra.gov.in/",
+        "official_scheme_url": "https://sjsa.maharashtra.gov.in/",
+        "application_url": "https://mahadbt2.maharashtra.gov.in/",
+        "renewal_url": "https://mahadbt2.maharashtra.gov.in/",
+        "grievance_url": "https://sjsa.maharashtra.gov.in/",
+        "source_url": "https://sjsa.maharashtra.gov.in/",
+        "application_link_status": "unverified",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched sjsa.maharashtra.gov.in on 2026-09-12: confirmed the official Social Justice & Special Assistance Department site (government seal/branding), an informational portal rather than a direct application host for this specific scheme in the fetched excerpt.",
+          "The scheme's own previous dedicated application domain (sas.mahait.org) returned an HTTP 308 permanent redirect to mahadbt2.maharashtra.gov.in when fetched directly — confirmed that newer portal is real and live (government branding, citizen login, a 'Pensioners/Special Assistance: 3 schemes' category), but this scheme was not explicitly named by title on its homepage without logging in, so 'verified' would overstate what was actually confirmed — left as 'unverified' rather than assumed."
+        ]
+      },
+      "rules": [
+        { "field_name": "state", "operator": "=", "value": "Maharashtra", "logical_group": "A" },
+        { "field_name": "age", "operator": ">=", "value": 18, "logical_group": "A" },
+        { "field_name": "age", "operator": "<=", "value": 65, "logical_group": "A" },
+        { "field_name": "annual_income", "operator": "<=", "value": 21000, "logical_group": "A" },
+        { "field_name": "disability_status", "operator": "=", "value": true, "logical_group": "A" },
+        { "field_name": "state", "operator": "=", "value": "Maharashtra", "logical_group": "B" },
+        { "field_name": "age", "operator": ">=", "value": 18, "logical_group": "B" },
+        { "field_name": "age", "operator": "<=", "value": 65, "logical_group": "B" },
+        { "field_name": "annual_income", "operator": "<=", "value": 21000, "logical_group": "B" },
+        { "field_name": "marital_status", "operator": "=", "value": "widowed", "logical_group": "B" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Income Certificate", "is_mandatory": true },
+        { "document_type": "Age Proof (Birth Certificate)", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    },
+    {
+      "seed_key": "maha_ramai_awas_gharkul",
+      "name": "Ramai Awas Gharkul Yojana",
+      "description": "Permanent housing construction assistance for Scheduled Caste and Neo-Buddhist families in rural and urban Maharashtra.",
+      "issuing_authority": "Social Justice and Special Assistance Department, Government of Maharashtra",
+      "category": "Housing & Shelter",
+      "benefit_type": "housing_subsidy",
+      "benefit_value_estimate": 132000,
+      "conflict_group": "housing_subsidy",
+      "is_active": true,
+      "links": {
+        "policy_url": "https://sjsa.maharashtra.gov.in/",
+        "official_scheme_url": "https://sjsa.maharashtra.gov.in/",
+        "application_url": null,
+        "renewal_url": null,
+        "grievance_url": "https://sjsa.maharashtra.gov.in/",
+        "source_url": "https://sjsa.maharashtra.gov.in/",
+        "application_link_status": "state_specific",
+        "last_verified_at": "2026-09-12T00:00:00+00:00",
+        "verification_notes": [
+          "Directly fetched sjsa.maharashtra.gov.in on 2026-09-12: confirmed this real, official department site explicitly names 'Ramai Awas Yojana' as a state-sponsored scheme.",
+          "Beneficiary selection/administration is carried out at the local body level (Zilla Parishad / Municipal Corporation — e.g. zpsatara.gov.in, pmc.gov.in each publish their own scheme page), not through one centralized citizen self-application URL — marked 'state_specific' (varies by district/local body) rather than asserting a single, possibly-wrong application link."
+        ]
+      },
+      "rules": [
+        { "field_name": "state", "operator": "=", "value": "Maharashtra", "logical_group": "A" },
+        { "field_name": "social_category", "operator": "=", "value": "SC", "logical_group": "A" }
+      ],
+      "document_requirements": [
+        { "document_type": "Aadhaar Card", "is_mandatory": true },
+        { "document_type": "Caste Certificate", "is_mandatory": true },
+        { "document_type": "Residence Certificate", "is_mandatory": true },
+        { "document_type": "Bank Passbook", "is_mandatory": true }
+      ]
+    }
+  ],
+
+  "conflict_rules": []
+}
